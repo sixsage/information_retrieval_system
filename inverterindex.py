@@ -1,3 +1,7 @@
+from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
+from collections import Counter
+
 class InvertedIndexToken:
     def __init__(self, token: str, docId: list):
         self.token = token
@@ -24,5 +28,7 @@ class Converter:
         return InvertedIndexToken(token, doclist)
 
 
-def tokenizer():
-    pass
+def tokenizer(content: str):
+    tokens = word_tokenize(content)
+    stemed_words = [PorterStemmer(x )for x in tokens]
+    return Counter(stemed_words)
