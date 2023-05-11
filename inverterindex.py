@@ -1,7 +1,16 @@
+<<<<<<< Updated upstream
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
-from collections import Counter
-
+from collections import Counter, defaultdict
+from bs4 import BeautifulSoup
+import json
+from hashlib import sha256
+=======
+class InvertedIndexDict:
+    def __init__(self):
+        pass
+    
+>>>>>>> Stashed changes
 class InvertedIndexToken:
     def __init__(self, token: str, docId: list):
         self.token = token
@@ -32,3 +41,19 @@ def tokenizer(content: str):
     tokens = word_tokenize(content)
     stemed_words = [PorterStemmer(x )for x in tokens]
     return Counter(stemed_words)
+
+if __name__ == "__main__":
+    directory = input()
+    iid = defaultdict(list)
+    for folder in directory:
+        for filename in directory:
+            file = open(filename, "r")
+            page = json.dumps(file.read())
+            url = page["url"]
+            html_content = page["content"]
+            docId = sha256(url)
+            text = BeautifulSoup(html_content).get_text()
+            stems = tokenizer(text)
+            for stem in stems:
+                iid[stem].append((docId, stems[stem]))
+    
