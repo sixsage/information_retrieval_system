@@ -1,26 +1,26 @@
-<<<<<<< Updated upstream
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
 from collections import Counter, defaultdict
 from bs4 import BeautifulSoup
 import json
 from hashlib import sha256
-=======
-class InvertedIndexDict:
-    def __init__(self):
-        pass
-    
->>>>>>> Stashed changes
+import lxml
+import bisect
+
+PATH_TO_PAGES = ''
+
 class InvertedIndexToken:
     def __init__(self, token: str, docId: list):
         self.token = token
         self.docId = docId
     
     def add_docId(self, newId):
-        for i,doc in enumerate(self.docId):
-            if doc < newId:
-                continue
-        self.docId = self.docId[:i-1] + [newId]  + self.docId[i:]
+        # this isnt even correct
+        # for i,doc in enumerate(self.docId):
+        #     if doc < newId:
+        #         continue
+        # self.docId = self.docId[:i-1] + [newId]  + self.docId[i:]
+        bisect.insort(self.docId, newId)
     
 class Converter:
     def __init__(self, itt: InvertedIndexToken = None, filestr: str = None):
@@ -35,7 +35,6 @@ class Converter:
         token = splitstr[0]
         doclist = list(splitstr[1])
         return InvertedIndexToken(token, doclist)
-
 
 def tokenizer(content: str):
     tokens = word_tokenize(content)
