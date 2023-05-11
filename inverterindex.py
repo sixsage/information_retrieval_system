@@ -6,8 +6,9 @@ import json
 from hashlib import sha256
 import lxml
 import bisect
+import os
 
-PATH_TO_PAGES = ''
+PATH_TO_PAGES = 'DEV'
 
 class InvertedIndexToken:
     def __init__(self, token: str, docId: list):
@@ -38,21 +39,27 @@ class Converter:
 
 def tokenizer(content: str):
     tokens = word_tokenize(content)
-    stemed_words = [PorterStemmer(x )for x in tokens]
+    stemmer = PorterStemmer()
+    stemed_words = [stemmer.stem(token) for token in tokens]
     return Counter(stemed_words)
 
 if __name__ == "__main__":
-    directory = input()
+    #directory = input()
     iid = defaultdict(list)
-    for folder in directory:
-        for filename in directory:
-            file = open(filename, "r")
-            page = json.dumps(file.read())
-            url = page["url"]
-            html_content = page["content"]
-            docId = sha256(url)
-            text = BeautifulSoup(html_content).get_text()
-            stems = tokenizer(text)
-            for stem in stems:
-                iid[stem].append((docId, stems[stem]))
-    
+    # enumerate vs hash ???
+    # either way we need to store the mapping
+    pageIndex = 0
+    for domain in os.scandir(PATH_TO_PAGES):
+        for page in os.scandir(domain.path):
+            pageIndex += 1 # enumerate vs hash ???
+            with open(page.path, "r") as file:
+                data = json.loads(file.read())
+                html_content = data["content"]
+                text = BeautifulSoup(html_content, "lxml").get_text()
+                stems = tokenizer(text)
+                for stem in stems:
+                    iid[stem].append((pageIndex, stems[stem]))
+    dumpingJson = json.dumps(iid)
+    with open("inverted_index.json", "w") as opened:
+        opened.write(dumpingJson)
+                
