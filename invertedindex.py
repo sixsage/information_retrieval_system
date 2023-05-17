@@ -45,35 +45,7 @@ def tokenizer(content: str):
     stemed_words = [stemmer.stem(token) for token in tokens]
     return Counter(stemed_words)
 
-def query(terms: list[str], iid: dict[str, list[int]]) -> list[int]:
-    terms = sorted(terms, key=lambda x: len(iid[x]))
-    docs = None
-    for term in terms:
-        if docs == None:
-            docs = iid[term]
-        else:
-            newdocs = iid[term]
-            i = 0 # index for docs
-            u = 0 # index for new term docs
-            new = [] # resulting intersection of docs
-            while i < len(docs) and u < len(newdocs):
-                if docs[i] == newdocs[u]:
-                    new.append(docs[i])
-                    i += 1
-                    u += 1
-                elif docs[i] < newdocs[u]:
-                    i += 1
-                else:
-                    u += 1
-            docs = new
-    return docs
-
-def load_json(file):
-    with open(file, "r") as f:
-        x = f.read()
-        return json.loads(x)
-
-if __name__ == "__main__":
+def buildindex():
     #directory = input()
     iid = defaultdict(list)
     # enumerate vs hash ???
@@ -97,4 +69,13 @@ if __name__ == "__main__":
         opened.write(dumpingJson)
     with open("urlindex.json", "w") as urlindex:
         urlindex.write(dumpingUrls)
-                
+
+def load_json(file):
+    with open(file, "r") as f:
+        x = f.read()
+        return json.loads(x)
+    
+
+if __name__ == "__main__":
+    pass
+    
