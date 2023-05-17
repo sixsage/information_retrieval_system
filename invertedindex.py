@@ -74,7 +74,6 @@ def buildindex():
     with open("urlindex.json", "w") as url_index:
         url_index.write(dumping_urls)
 
-#total pages = pageindex at end of traversal 
 def tf_idf(term: str, doc_id: int, iid: defaultdict[list, int], total_pages: int):
     posting = iid[term]
     freq = -1
