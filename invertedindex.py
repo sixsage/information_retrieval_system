@@ -74,21 +74,6 @@ def buildindex():
     with open("urlindex.json", "w") as url_index:
         url_index.write(dumping_urls)
 
-def tf_idf(term: str, doc_id: int, iid: defaultdict[list, int], total_pages: int):
-    posting = iid[term]
-    freq = -1
-    # for page in posting:
-    #     if page[0] == docID:
-    #         freq = page[1]
-    #         break
-    position = bisect.bisect_left(posting, [doc_id])
-    if posting[position][0] == doc_id:
-        freq = posting[position][1]
-    
-    doc_count = len(posting)
-
-    return (1+ math.log(freq)) * math.log(total_pages/doc_count) if freq > 0 else 0
-
 
             
 
