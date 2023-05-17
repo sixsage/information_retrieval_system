@@ -6,7 +6,6 @@ from collections import Counter, defaultdict
 from bs4 import BeautifulSoup
 import json
 from hashlib import sha256
-import lxml
 import bisect
 import os
 import math
@@ -43,8 +42,8 @@ class Converter:
 def tokenizer(content: str):
     tokens = word_tokenize(content)
     stemmer = PorterStemmer()
-    stemed_words = [stemmer.stem(token) for token in tokens]
-    return Counter(stemed_words)
+    stemmed_words = [stemmer.stem(token) for token in tokens]
+    return Counter(stemmed_words)
 
 def buildindex():
     #directory = input()
@@ -52,18 +51,23 @@ def buildindex():
     # enumerate vs hash ???
     # either way we need to store the mapping
     urls = {}
-    pageIndex = 0
+    page_index = 0
     for domain in os.scandir(PATH_TO_PAGES):
         for page in os.scandir(domain.path):
-            pageIndex += 1 # enumerate vs hash ???
+            page_index += 1 # enumerate vs hash ???
             with open(page.path, "r") as file:
                 data = json.loads(file.read())
-                urls[pageIndex] = data["url"]
+                urls[page_index] = data["url"]
                 html_content = data["content"]
                 text = BeautifulSoup(html_content, "lxml").get_text()
                 stems = tokenizer(text)
                 for stem in stems:
-                    iid[stem].append((pageIndex, stems[stem]))
+                    iid[stem].append((page_index, stems[stem]))
+            print(page_index)
+
+# 1302, 2052
+    print(page_index)
+    print(len(iid))
     dumpingJson = json.dumps(iid)
     dumpingUrls = json.dumps(urls)
     with open("inverted_index.json", "w") as opened:
@@ -75,13 +79,17 @@ def buildindex():
 def tfidf(term:str, docID:int, iid:defaultdict(list[int]), totalPages:int):
     posting = iid[term]
     freq = -1
-    for page in posting:
-        if page[0] == docID:
-            freq = page[1]
-            break
+    # for page in posting:
+    #     if page[0] == docID:
+    #         freq = page[1]
+    #         break
+    position = bisect.bisect_left(posting, [docID])
+    if posting[position][0] == docID:
+        freq = posting[position][1]
+    
     doc_count = len(posting)
 
-    return (1+ math.log(freq)) * math.log(totalPages/doc_count)
+    return (1+ math.log(freq)) * math.log(totalPages/doc_count) if freq > 0 else 0
 
 
             
