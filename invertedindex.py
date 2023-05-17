@@ -9,6 +9,7 @@ from hashlib import sha256
 import lxml
 import bisect
 import os
+import math
 
 PATH_TO_PAGES = 'DEV'
 
@@ -69,6 +70,20 @@ def buildindex():
         opened.write(dumpingJson)
     with open("urlindex.json", "w") as urlindex:
         urlindex.write(dumpingUrls)
+
+#total pages = pageindex at end of traversal 
+def tfidf(term:str, docID:int, iid:defaultdict(list[int]), totalPages:int):
+    posting = iid[term]
+    freq = -1
+    for page in posting:
+        if page[0] == docID:
+            freq = page[1]
+            break
+    doc_count = len(posting)
+
+    return (1+ math.log(freq)) * math.log(totalPages/doc_count)
+
+
             
 
 if __name__ == "__main__":
