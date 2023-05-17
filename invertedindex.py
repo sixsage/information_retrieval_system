@@ -69,12 +69,7 @@ def buildindex():
         opened.write(dumpingJson)
     with open("urlindex.json", "w") as urlindex:
         urlindex.write(dumpingUrls)
-
-def load_json(file):
-    with open(file, "r") as f:
-        x = f.read()
-        return json.loads(x)
-    
+            
 
 if __name__ == "__main__":
     pass
