@@ -13,8 +13,8 @@ if __name__ == "__main__":
     user_input = [stemmer.stem(token) for token in user_input]
     iid = load_json("inverted_index.json")
     #urls = load_json("urlindex.json")
-    targetDocIds = query(user_input, iid)
-    for docid in targetDocIds:
-        print(docid)
+    target_doc_ids = query(user_input, iid)
+    for doc_id in target_doc_ids:
+        print(doc_id)
         #print(urls[docid])
 
