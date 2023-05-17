@@ -48,12 +48,14 @@ if __name__ == "__main__":
     iid = defaultdict(list)
     # enumerate vs hash ???
     # either way we need to store the mapping
+    urls = {}
     pageIndex = 0
     for domain in os.scandir(PATH_TO_PAGES):
         for page in os.scandir(domain.path):
             pageIndex += 1 # enumerate vs hash ???
             with open(page.path, "r") as file:
                 data = json.loads(file.read())
+                urls[pageIndex] = data["url"]
                 html_content = data["content"]
                 text = BeautifulSoup(html_content, "lxml").get_text()
                 stems = tokenizer(text)
