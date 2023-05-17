@@ -5,7 +5,6 @@ from nltk.tokenize import word_tokenize
 from collections import Counter, defaultdict
 from bs4 import BeautifulSoup
 import json
-from hashlib import sha256
 import bisect
 import os
 import math
@@ -13,31 +12,31 @@ import math
 PATH_TO_PAGES = 'DEV'
 
 class InvertedIndexToken:
-    def __init__(self, token: str, docId: list):
+    def __init__(self, token: str, doc_id: list):
         self.token = token
-        self.docId = docId
+        self.doc_id = doc_id
     
-    def add_docId(self, newId):
+    def add_docId(self, new_id):
         # this isnt even correct
         # for i,doc in enumerate(self.docId):
         #     if doc < newId:
         #         continue
         # self.docId = self.docId[:i-1] + [newId]  + self.docId[i:]
-        bisect.insort(self.docId, newId)
+        bisect.insort(self.doc_id, new_id)
     
 class Converter:
-    def __init__(self, itt: InvertedIndexToken = None, filestr: str = None):
+    def __init__(self, itt: InvertedIndexToken = None, file: str = None):
         self.itt = itt
-        self.filestr = filestr
+        self.file = file
     
     def to_str(self):
-        return str(self.itt.token) + ": " + str(self.itt.docId)
+        return str(self.itt.token) + ": " + str(self.itt.doc_id)
     
     def to_itt(self):
-        splitstr = self.filestr.split(": ")
-        token = splitstr[0]
-        doclist = list(splitstr[1])
-        return InvertedIndexToken(token, doclist)
+        file_list = self.file.split(": ")
+        token = file_list[0]
+        doc_list = list(file_list[1])
+        return InvertedIndexToken(token, doc_list)
 
 def tokenizer(content: str):
     tokens = word_tokenize(content)
@@ -68,32 +67,32 @@ def buildindex():
 # 1302, 2052
     print(page_index)
     print(len(iid))
-    dumpingJson = json.dumps(iid)
-    dumpingUrls = json.dumps(urls)
+    dumping_json = json.dumps(iid)
+    dumping_urls = json.dumps(urls)
     with open("inverted_index.json", "w") as opened:
-        opened.write(dumpingJson)
-    with open("urlindex.json", "w") as urlindex:
-        urlindex.write(dumpingUrls)
+        opened.write(dumping_json)
+    with open("urlindex.json", "w") as url_index:
+        url_index.write(dumping_urls)
 
 #total pages = pageindex at end of traversal 
-def tfidf(term:str, docID:int, iid:defaultdict(list[int]), totalPages:int):
+def tf_idf(term: str, doc_id: int, iid: defaultdict[list, int], total_pages: int):
     posting = iid[term]
     freq = -1
     # for page in posting:
     #     if page[0] == docID:
     #         freq = page[1]
     #         break
-    position = bisect.bisect_left(posting, [docID])
-    if posting[position][0] == docID:
+    position = bisect.bisect_left(posting, [doc_id])
+    if posting[position][0] == doc_id:
         freq = posting[position][1]
     
     doc_count = len(posting)
 
-    return (1+ math.log(freq)) * math.log(totalPages/doc_count) if freq > 0 else 0
+    return (1+ math.log(freq)) * math.log(total_pages/doc_count) if freq > 0 else 0
 
 
             
 
 if __name__ == "__main__":
-    pass
+    buildindex()
     
