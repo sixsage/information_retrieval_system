@@ -44,5 +44,4 @@ def query(terms: list[str], iid: dict[str, list[int]], total_pages) -> list[int]
 
         
     ordered = sorted(docs, key= lambda x: x[1], reverse=True)
-            
-    return [x[0][0] for x in ordered]
+    return [x[0] for x in ordered]

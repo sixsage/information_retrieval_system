@@ -21,6 +21,6 @@ if __name__ == "__main__":
     urls = load_json("urlindex.json")
     target_doc_ids = query(user_input, iid, TOTAL_PAGES)
     for doc_id in target_doc_ids:
-        print(doc_id)
-        #print(urls[docid])
+        #print(doc_id)
+        print(urls[str(doc_id)])
 
