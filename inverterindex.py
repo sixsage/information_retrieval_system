@@ -68,6 +68,11 @@ def query(terms: list[str], iid: dict[str, list[int]]) -> list[int]:
             docs = new
     return docs
 
+def load_json(file):
+    with open(file, "r") as f:
+        x = f.read()
+        return json.loads(x)
+
 if __name__ == "__main__":
     #directory = input()
     iid = defaultdict(list)
@@ -87,6 +92,9 @@ if __name__ == "__main__":
                 for stem in stems:
                     iid[stem].append((pageIndex, stems[stem]))
     dumpingJson = json.dumps(iid)
+    dumpingUrls = json.dumps(urls)
     with open("inverted_index.json", "w") as opened:
         opened.write(dumpingJson)
+    with open("urlindex.json", "w") as urlindex:
+        urlindex.write(dumpingUrls)
                 
