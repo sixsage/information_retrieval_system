@@ -32,7 +32,7 @@ def query(terms: list[str], iid: dict[str, list[int]], total_pages) -> list[int]
             new = [] # resulting intersection of docs
             while i < len(docs) and u < len(new_docs):
                 if docs[i][0] == new_docs[u][0]:
-                    rank = tf_idf(term, iid, total_pages)
+                    rank = tf_idf(term, docs[i][0], iid, total_pages)
                     new.append((docs[i],rank))
                     i += 1
                     u += 1
