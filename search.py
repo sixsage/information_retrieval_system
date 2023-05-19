@@ -22,6 +22,7 @@ def tf_idf(term: str, doc_id: int, iid: defaultdict[list, int], total_pages: int
 def query(terms: list[str], iid: dict[str, list[int]], total_pages) -> list[int]:
     terms = sorted(terms, key=lambda x: len(iid[x]))
     docs = None
+    ranks = {}
     for term in terms:
         if docs == None:
             docs = iid[term]
@@ -32,8 +33,9 @@ def query(terms: list[str], iid: dict[str, list[int]], total_pages) -> list[int]
             new = [] # resulting intersection of docs
             while i < len(docs) and u < len(new_docs):
                 if docs[i][0] == new_docs[u][0]:
-                    rank = tf_idf(term, iid,total_pages)
-                    new.append((docs[i],rank))
+                    rank = tf_idf(term, docs[i][0], iid, total_pages)
+                    ranks[str(docs[i][0])] = rank
+                    new.append(docs[i])
                     i += 1
                     u += 1
                 elif docs[i][0] < new_docs[u][0]:
@@ -43,5 +45,5 @@ def query(terms: list[str], iid: dict[str, list[int]], total_pages) -> list[int]
             docs = new
 
         
-    ordered = sorted(docs, key= lambda x: x[1], reverse=True)
-    return [x[0] for x in ordered]
+    ordered = sorted(docs, key= lambda x: ranks[str(x[0])], reverse=True)
+    return [x[0] for x in ordered][:5]
