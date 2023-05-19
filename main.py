@@ -23,4 +23,6 @@ if __name__ == "__main__":
     for doc_id in target_doc_ids:
         #print(doc_id)
         print(urls[str(doc_id)])
-
+    print("Top 5 urls: ")
+    for doc_id in target_doc_ids[:5]:
+        print(urls[str(doc_id)])
