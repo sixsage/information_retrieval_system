@@ -24,9 +24,9 @@ if __name__ == "__main__":
     user_input = [stemmer.stem(token) for token in user_input]
     
     target_doc_ids = search.query_processing(user_input, iid, TOTAL_PAGES)
-    for doc_id in target_doc_ids:
-        #print(doc_id)
-        print(urls[str(doc_id)])
+    # for doc_id in target_doc_ids:
+    #     #print(doc_id)
+    #     print(urls[str(doc_id)])
     print("Top 5 urls: ")
     for doc_id in target_doc_ids[:5]:
         print(urls[str(doc_id)])
