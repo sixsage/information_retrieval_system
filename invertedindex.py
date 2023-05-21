@@ -8,6 +8,7 @@ import json
 import bisect
 import os
 import math
+import sys
 
 PATH_TO_PAGES = 'DEV'
 
@@ -62,7 +63,20 @@ def buildindex():
                 stems = tokenizer(text)
                 for stem in stems:
                     iid[stem].append((page_index, stems[stem]))
+
+                # check accumulated index size with sys.getsizeof(index)
+                # if it is over some threshold, dump it into a text file
+                # maybe we can add try/except in the case of memory overflow - MemoryError in python 
             print(page_index)
+
+    # after indexing all the pages, we have to merge the created text files
+    # open all the files, and read them line by line
+    # at the top, get the token that comes first
+    # check the line we are currently at for all files to see if there are any other files with that token at the top
+    # merge the posting, and put it into the final file
+    # note where the posting info will start in the file for the index of the index
+    # move the line down afterward
+
 
 # 1302, 2052
     print(page_index)
