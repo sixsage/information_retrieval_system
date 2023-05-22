@@ -88,6 +88,12 @@ def buildindex():
     with open("urlindex.json", "w") as url_index:
         url_index.write(dumping_urls)
 
+def dump_as_text(file, iid):
+    with open(file, 'w') as f:
+        for token, posting in iid.items():
+            line = str(token) + ": " + str(posting) + "\n"
+            f.write(line)
+            
 
 def build_index_of_index(inverted_index):
     token_loc = {}
