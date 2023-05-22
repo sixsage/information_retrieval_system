@@ -99,6 +99,14 @@ def build_index_of_index(inverted_index):
             line = f.readline()
     return token_loc
 
+def find_token(token, token_loc, inverted_index):
+    line = ''
+    with open(inverted_index) as f:
+        f.seek(token_loc[token])
+        line = f.readline()
+        
+    return line
+
 
             
 
