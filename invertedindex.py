@@ -97,7 +97,7 @@ def build_index_of_index(inverted_index):
             info = line.split(":")
             token_loc[info[0]] = f.tell() - len(line)
             line = f.readline()
-    
+    return token_loc
 
 
             
