@@ -89,6 +89,17 @@ def buildindex():
         url_index.write(dumping_urls)
 
 
+def build_index_of_index(inverted_index):
+    token_loc = {}
+    with open(inverted_index) as f:
+        line = f.readline()
+        while line: 
+            info = line.split(":")
+            token_loc[info[0]] = f.tell() - len(line)
+            line = f.readline()
+    
+
+
             
 
 if __name__ == "__main__":
