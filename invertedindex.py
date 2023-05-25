@@ -134,7 +134,41 @@ def find_token(token, token_loc, inverted_index):
         
     return line
 
+def merge2(list1, list2):
+    combined = []
+    i, j = 0 
+    while i < len(list1) and j < len(list2):
+        if list1[i][0] < list2[j][0]:
+            combined.append(list1[i])
+            i += 1
+        elif list2[j][0] < list1[i][0]:
+            combined.append(list2[j])
+            j += 1
+        else:
+            combined.append(list1[i])
+            i+= 1
+            j +=1 
+    while i < len(list1):
+        combined.append(list1[i])
+        i += 1
+    while j < len(list2):
+        combined.append(list2[j])
+        j += 1
+    return combined
 
+
+def merge_postings(allpostings):
+    if len(allpostings) == 0:
+        return
+    if len(allpostings) == 1:
+        return allpostings[0]
+    if len(allpostings) ==2 :
+        return merge2(allpostings[0], allpostings[1])
+    
+    mid = len(allpostings) //2 
+    l = merge_postings(allpostings[:mid])
+    r = merge_postings(allpostings[mid:])
+    return merge2(l, r)
             
 
 if __name__ == "__main__":
