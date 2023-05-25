@@ -88,11 +88,32 @@ def buildindex():
     with open("urlindex.json", "w") as url_index:
         url_index.write(dumping_urls)
 
-def dump_as_text(file, iid):
+    
+def dict_to_str(iid: dict[int, list[(int, int)]]):
+    res = ""
+    for k,v in iid:
+        v = ",".join([str(i) for i in v])
+        res += k + ": " + v + "\n"
+    return res
+
+def str_to_dict(line: str):
+    res_dict = {}
+    parsed = line.split(":")
+    posting = []
+    s = parsed[1]
+    for i in range(len(parsed[1])):
+        if s[i] == "(":
+            res = ""
+            while s[i] != ")":
+                i += 1
+                res += s[i]
+            posting.append(tuple(res.split(",")))
+    res_dict[parsed[0]] = posting
+    return res_dict
+
+def dump_as_text(file: str, iid: dict[int, list[(int,int)]]) -> None:
     with open(file, 'w') as f:
-        for token, posting in iid.items():
-            line = str(token) + ": " + str(posting) + "\n"
-            f.write(line)
+        f.write(dict_to_str(iid))
             
 
 def build_index_of_index(inverted_index):
