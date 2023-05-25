@@ -136,7 +136,8 @@ def find_token(token, token_loc, inverted_index):
 
 def merge2(list1, list2):
     combined = []
-    i, j = 0 
+    i = 0 
+    j = 0
     while i < len(list1) and j < len(list2):
         if list1[i][0] < list2[j][0]:
             combined.append(list1[i])
