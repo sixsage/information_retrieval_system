@@ -52,6 +52,7 @@ def buildindex():
     # either way we need to store the mapping
     urls = {}
     page_index = 0
+    partial_indexes = []
     for domain in os.scandir(PATH_TO_PAGES):
         for page in os.scandir(domain.path):
             page_index += 1 # enumerate vs hash ???
@@ -68,7 +69,14 @@ def buildindex():
                 # if it is over some threshold, dump it into a text file
                 # maybe we can add try/except in the case of memory overflow - MemoryError in python 
             print(page_index)
+            if page_index % 15000 == 0: 
+                dump_as_text(f"inverted_index{page_index//15000}.txt", iid)
+                partial_indexes.append(f"inverted_index{page_index//15000}.txt")
+                iid = {}
+    dump_as_text(f"inverted_index{page_index//15000 + 1}.txt", iid)
+    partial_indexes.append(f"inverted_index{page_index//15000 +1}.txt")
 
+    merge_files("final_index.txt", partial_indexes)
     # after indexing all the pages, we have to merge the created text files
     # open all the files, and read them line by line
     # at the top, get the token that comes first
@@ -115,6 +123,40 @@ def dump_as_text(file: str, iid: dict[int, list[(int,int)]]) -> None:
     with open(file, 'w') as f:
         f.write(dict_to_str(iid))
 
+def merge_postings(allpostings):
+    if len(allpostings) == 0:
+        return
+    if len(allpostings) == 1:
+        return allpostings[0]
+    if len(allpostings) ==2 :
+        return merge2(allpostings[0], allpostings[1])
+    result = []
+    for posting in allpostings:
+        result.extend(posting)
+    return result
+
+def merge_files(output, args):
+    file_obj = [open(file) for file in args]
+    cur_dicts = [str_to_dict(file.readline()) for file in file_obj]
+    out = open(output, 'w')
+    while len(cur_dicts) != 0:
+        cur_min = list(min([dict.keys() for dict in cur_dicts]))[0]
+        cur_postings = []
+        for i in range(len(cur_dicts)):
+            if cur_min in cur_dicts[i]:
+                cur_postings.append(cur_dicts[i][cur_min])
+                try:
+                    cur_dicts[i] = str_to_dict(file_obj[i].readline())
+                except EOFError:
+                    cur_dicts.pop(i)
+                    file_obj[i].close()
+                    file_obj.pop(i)
+        combined = merge_postings(cur_postings)
+        final_post = {}
+        final_post[cur_min] = combined
+        posting = dict_to_str(final_post)
+        out.write(posting)
+    out.close()
 
 def build_index_of_index(inverted_index):
     token_loc = {}
