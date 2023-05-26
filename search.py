@@ -38,6 +38,7 @@ def get_intersection(intersection: list[(int, int)], new_term_postings) -> list[
     return result
 
 def cosine_similarity(list1: list[int], list2: list[int]):
+    print(list1, list2)
     return numpy.dot(list1, list2) / (numpy.linalg.norm(list1) * numpy.linalg.norm(list2))
 
 def query_processing(terms: list[str], iid: dict[str, list[(int, int)]], total_pages) -> list[int]:
@@ -50,22 +51,31 @@ def query_processing(terms: list[str], iid: dict[str, list[(int, int)]], total_p
         else:
             new_term_postings = iid[term]
             intersection = get_intersection(intersection, new_term_postings)
+        for doc_id, frequency in intersection:
+            doc_scores[doc_id].append(1+ math.log(frequency))
     
-    for term in terms:
-        for doc_id, _ in intersection:
-            doc_scores[doc_id].append(tf_idf(term, doc_id, iid, total_pages))
-    # # calculate the cosine similarity
-    # query_as_doc = Counter(terms)
-    # query_score = []
+    # for tf idf sum ranking
     # for term in terms:
-    #     query_score.append(tf_idf(term, -1, iid, total_pages, term_frequency=query_as_doc[term]))
-    
-    # ranking = sorted(doc_scores.keys(), 
-    #                  key= lambda doc_id: cosine_similarity(doc_scores[doc_id], query_score))
-    # return ranking
+    #     for doc_id, _ in intersection:
+    #         doc_scores[doc_id].append(tf_idf(term, doc_id, iid, total_pages))
 
-    ranking = sorted(doc_scores.keys(), key=lambda doc_id: sum(doc_scores[doc_id]), reverse=True)
+    # for cosine similarity
+    # for term in terms:
+    #     for doc_id, frequency in intersection:
+    #         doc_scores[doc_id].append(1+ math.log(frequency))
+    # calculate the cosine similarity
+    query_as_doc = Counter(terms)
+    query_score = []
+    for term in terms:
+        query_score.append(tf_idf(term, -1, iid, total_pages, term_frequency=query_as_doc[term]))
+    pages_with_all_terms = [doc_id for doc_id in doc_scores if len(doc_scores[doc_id]) == len(query_score)]
+    ranking = sorted(pages_with_all_terms, 
+                     key= lambda doc_id: cosine_similarity(doc_scores[doc_id], query_score))
     return ranking
+
+    # for tf_idf sum ranking
+    # ranking = sorted(doc_scores.keys(), key=lambda doc_id: sum(doc_scores[doc_id]), reverse=True)
+    # return ranking
 
     # for term in terms:
     #     if docs == None:
