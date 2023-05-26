@@ -91,46 +91,29 @@ def buildindex():
     
 def dict_to_str(iid: dict[int, list[(int, int)]]):
     res = ""
-    for k,v in iid:
-        v = ",".join([str(i) for i in v])
-        res += k + ": " + v + "\n"
+    for k in sorted(iid):
+        v = ",".join([str(i) for i in iid[k]])
+        res += str(k) + ": " + v + "\n"
     return res
 
 def str_to_dict(line: str):
-    res_dict = {}
     parsed = line.split(":")
     posting = []
     s = parsed[1]
     for i in range(len(parsed[1])):
         if s[i] == "(":
             res = ""
+            i += 1
             while s[i] != ")":
-                i += 1
                 res += s[i]
-            posting.append(tuple(res.split(",")))
-    res_dict[parsed[0]] = posting
-    return res_dict
+                i += 1          
+            tup = res.split(",")
+            posting.append(tuple([int(tup[0]), float(tup[1])]))
+    return {int(parsed[0]): posting}
 
 def dump_as_text(file: str, iid: dict[int, list[(int,int)]]) -> None:
     with open(file, 'w') as f:
         f.write(dict_to_str(iid))
-
-def merge_dicts(*args: dict[int, list[(int, int)]]):
-    token = args[0].keys()[0]
-    res = []
-    iters = [iter(d.values()[0]) for d in args]
-    curs = [next(it) for it in iters]
-    smallest_doc = min(curs)
-    res.append(smallest_doc)
-    smallest_index = curs.index(smallest_doc)
-    try:
-        curs[smallest_index] = next(iters[smallest_index])
-    except StopIteration:
-        curs.pop(smallest_index)
-        iters.pop(smallest_index)
-    return {token: res}
-    
-
 
 
 def build_index_of_index(inverted_index):
@@ -150,43 +133,6 @@ def find_token(token, token_loc, inverted_index):
         line = f.readline()
         
     return line
-
-def merge2(list1, list2):
-    combined = []
-    i = 0 
-    j = 0
-    while i < len(list1) and j < len(list2):
-        if list1[i][0] < list2[j][0]:
-            combined.append(list1[i])
-            i += 1
-        elif list2[j][0] < list1[i][0]:
-            combined.append(list2[j])
-            j += 1
-        else:
-            combined.append(list1[i])
-            i+= 1
-            j +=1 
-    while i < len(list1):
-        combined.append(list1[i])
-        i += 1
-    while j < len(list2):
-        combined.append(list2[j])
-        j += 1
-    return combined
-
-
-def merge_postings(allpostings):
-    if len(allpostings) == 0:
-        return
-    if len(allpostings) == 1:
-        return allpostings[0]
-    if len(allpostings) ==2 :
-        return merge2(allpostings[0], allpostings[1])
-    
-    mid = len(allpostings) //2 
-    l = merge_postings(allpostings[:mid])
-    r = merge_postings(allpostings[mid:])
-    return merge2(l, r)
             
 
 if __name__ == "__main__":
