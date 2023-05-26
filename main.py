@@ -14,8 +14,8 @@ def load_json(file):
 if __name__ == "__main__":
     #total pages need to be stored 
 
-    if not (os.path.exists("inverted_index.json") and os.path.exists("urlindex.json")):
-        total_pages = invertedindex.buildindex()
+    #if not (os.path.exists("inverted_index.json") and os.path.exists("urlindex.json")):
+    total_pages = invertedindex.buildindex()
     iid = load_json("inverted_index.json")
     urls = load_json("urlindex.json")
     user_input = input("SEARCH: ")

@@ -69,12 +69,15 @@ def buildindex():
                 # if it is over some threshold, dump it into a text file
                 # maybe we can add try/except in the case of memory overflow - MemoryError in python 
             print(page_index)
-            if page_index % 15000 == 0: 
-                dump_as_text(f"inverted_index{page_index//15000}.txt", iid)
-                partial_indexes.append(f"inverted_index{page_index//15000}.txt")
-                iid = {}
-    dump_as_text(f"inverted_index{page_index//15000 + 1}.txt", iid)
-    partial_indexes.append(f"inverted_index{page_index//15000 +1}.txt")
+            if page_index % 500 == 0: 
+                dump_as_text(f"inverted_index{page_index//500}.txt", iid)
+                partial_indexes.append(f"inverted_index{page_index//500}.txt")
+                iid = defaultdict(list)
+            if page_index >= 2000:
+                break
+    dump_as_text(f"inverted_index{page_index//500 + 1}.txt", iid)
+    partial_indexes.append(f"inverted_index{page_index//500 +1}.txt")
+
 
     merge_files("final_index.txt", partial_indexes)
     # after indexing all the pages, we have to merge the created text files
@@ -101,11 +104,11 @@ def dict_to_str(iid: dict[int, list[(int, int)]]):
     res = ""
     for k in sorted(iid):
         v = ",".join([str(i) for i in iid[k]])
-        res += str(k) + ": " + v + "\n"
-    return res
+        res += str(k) + "#$%^& " + v + "\n"
+    return res.rstrip('\n')
 
 def str_to_dict(line: str):
-    parsed = line.split(":")
+    parsed = line.split("#$%^& ")
     posting = []
     s = parsed[1]
     for i in range(len(parsed[1])):
@@ -117,23 +120,17 @@ def str_to_dict(line: str):
                 i += 1          
             tup = res.split(",")
             posting.append(tuple([int(tup[0]), float(tup[1])]))
-    return {int(parsed[0]): posting}
+    return {parsed[0]: posting}
 
 def dump_as_text(file: str, iid: dict[int, list[(int,int)]]) -> None:
     with open(file, 'w') as f:
         f.write(dict_to_str(iid))
 
 def merge_postings(allpostings):
-    if len(allpostings) == 0:
-        return
-    if len(allpostings) == 1:
-        return allpostings[0]
-    if len(allpostings) ==2 :
-        return merge2(allpostings[0], allpostings[1])
-    result = []
+    res = []
     for posting in allpostings:
-        result.extend(posting)
-    return result
+        res.extend(posting)
+    return res
 
 def merge_files(output, args):
     file_obj = [open(file) for file in args]
@@ -143,11 +140,14 @@ def merge_files(output, args):
         cur_min = list(min([dict.keys() for dict in cur_dicts]))[0]
         cur_postings = []
         for i in range(len(cur_dicts)):
+            if i >= len(cur_dicts):
+                continue
             if cur_min in cur_dicts[i]:
                 cur_postings.append(cur_dicts[i][cur_min])
-                try:
-                    cur_dicts[i] = str_to_dict(file_obj[i].readline())
-                except EOFError:
+                line = file_obj[i].readline()
+                if line:
+                    cur_dicts[i] = str_to_dict(line)
+                else:
                     cur_dicts.pop(i)
                     file_obj[i].close()
                     file_obj.pop(i)
