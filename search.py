@@ -70,7 +70,7 @@ def query_processing(terms: list[str], iid: dict[str, list[(int, int)]], total_p
         query_score.append(tf_idf(term, -1, iid, total_pages, term_frequency=query_as_doc[term]))
     pages_with_all_terms = [doc_id for doc_id in doc_scores if len(doc_scores[doc_id]) == len(query_score)]
     ranking = sorted(pages_with_all_terms, 
-                     key= lambda doc_id: cosine_similarity(doc_scores[doc_id], query_score))
+                     key= lambda doc_id: cosine_similarity(doc_scores[doc_id], query_score), reverse=True)
     return ranking
 
     # for tf_idf sum ranking

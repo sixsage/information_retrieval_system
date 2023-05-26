@@ -69,14 +69,13 @@ def buildindex():
                 # if it is over some threshold, dump it into a text file
                 # maybe we can add try/except in the case of memory overflow - MemoryError in python 
             print(page_index)
-            if page_index % 500 == 0: 
-                dump_as_text(f"inverted_index{page_index//500}.txt", iid)
-                partial_indexes.append(f"inverted_index{page_index//500}.txt")
+            if page_index % 15000 == 0: 
+                dump_as_text(f"inverted_index{page_index//15000}.txt", iid)
+                partial_indexes.append(f"inverted_index{page_index//15000}.txt")
                 iid = defaultdict(list)
-            if page_index >= 2000:
-                break
-    dump_as_text(f"inverted_index{page_index//500 + 1}.txt", iid)
-    partial_indexes.append(f"inverted_index{page_index//500 +1}.txt")
+            
+    dump_as_text(f"inverted_index{page_index//15000 + 1}.txt", iid)
+    partial_indexes.append(f"inverted_index{page_index//15000 +1}.txt")
 
 
     merge_files("final_index.txt", partial_indexes)
@@ -105,7 +104,7 @@ def dict_to_str(iid: dict[int, list[(int, int)]]):
     for k in sorted(iid):
         v = ",".join([str(i) for i in iid[k]])
         res += str(k) + "#$%^& " + v + "\n"
-    return res.rstrip('\n')
+    return res
 
 def str_to_dict(line: str):
     parsed = line.split("#$%^& ")
@@ -163,7 +162,7 @@ def build_index_of_index(inverted_index):
     with open(inverted_index) as f:
         line = f.readline()
         while line: 
-            info = line.split(":")
+            info = line.split("#$%^& ")
             token_loc[info[0]] = f.tell() - len(line)
             line = f.readline()
     return token_loc
