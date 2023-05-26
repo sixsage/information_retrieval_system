@@ -114,7 +114,24 @@ def str_to_dict(line: str):
 def dump_as_text(file: str, iid: dict[int, list[(int,int)]]) -> None:
     with open(file, 'w') as f:
         f.write(dict_to_str(iid))
-            
+
+def merge_dicts(*args: dict[int, list[(int, int)]]):
+    token = args[0].keys()[0]
+    res = []
+    iters = [iter(d.values()[0]) for d in args]
+    curs = [next(it) for it in iters]
+    smallest_doc = min(curs)
+    res.append(smallest_doc)
+    smallest_index = curs.index(smallest_doc)
+    try:
+        curs[smallest_index] = next(iters[smallest_index])
+    except StopIteration:
+        curs.pop(smallest_index)
+        iters.pop(smallest_index)
+    return {token: res}
+    
+
+
 
 def build_index_of_index(inverted_index):
     token_loc = {}
