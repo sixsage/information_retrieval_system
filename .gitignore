@@ -2,3 +2,4 @@ DEV/
 *.json
 *.txt
 *.pyc
+__pycache__/
