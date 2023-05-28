@@ -122,7 +122,7 @@ def str_to_dict(line: str):
     return {parsed[0]: posting}
 
 def dump_as_text(file: str, iid: dict[int, list[(int,int)]]) -> None:
-    with open(file, 'w') as f:
+    with open(file, 'w', encoding="utf-8") as f:
         f.write(dict_to_str(iid))
 
 def merge_postings(allpostings):
@@ -132,9 +132,9 @@ def merge_postings(allpostings):
     return res
 
 def merge_files(output, args):
-    file_obj = [open(file) for file in args]
+    file_obj = [open(file, encoding="utf-8") for file in args]
     cur_dicts = [str_to_dict(file.readline()) for file in file_obj]
-    out = open(output, 'w')
+    out = open(output, 'w', encoding="utf-8")
     while len(cur_dicts) != 0:
         cur_min = list(min([dict.keys() for dict in cur_dicts]))[0]
         cur_postings = []
@@ -159,17 +159,17 @@ def merge_files(output, args):
 
 def build_index_of_index(inverted_index):
     token_loc = {}
-    with open(inverted_index) as f:
+    with open(inverted_index, encoding="utf-8") as f:
         line = f.readline()
         while line: 
             info = line.split("#$%^& ")
-            token_loc[info[0]] = f.tell() - len(line)
+            token_loc[info[0]] = f.tell() - len(line) - 1
             line = f.readline()
     return token_loc
 
 def find_token(token, token_loc, inverted_index):
     line = ''
-    with open(inverted_index) as f:
+    with open(inverted_index, encoding="utf-8") as f:
         f.seek(token_loc[token])
         line = f.readline()
         

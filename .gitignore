@@ -1,3 +1,4 @@
 DEV/
 *.json
 *.txt
+*.pyc
