@@ -15,7 +15,7 @@ class Index:
         self.index = defaultdict(list)
         self.dump_threshold = 15000
         self.location = ""
-        self.splitter = "#$%^& "
+        self.splitter = "#$%^&"
         self.urlindex = "urlindex.json"
     
     def tokenizer(self, content: str):
@@ -79,6 +79,7 @@ class Index:
         self.partial_indexes.append(filename)
         self.index = defaultdict(list)
 
+
 class InvertedIndex(Index):
     def __init__(self) -> None:
         super().__init__()
@@ -126,7 +127,7 @@ class InvertedIndex(Index):
             with open(self.urlindex, "w") as url_index:
                 url_index.write(dumping_urls)
             
-    def dict_to_str(self, iid: dict[int, list[(int, int)]]):
+    def dict_to_str(self, iid: dict[str, list[(int, int)]]):
         res = ""
         for k in sorted(iid):
             v = ",".join([str(i) for i in iid[k]])
@@ -137,7 +138,8 @@ class InvertedIndex(Index):
         parsed = line.split(self.splitter)
         posting = []
         s = parsed[1]
-        for i in range(len(parsed[1])):
+        i = 0
+        while i < len(parsed[1]):
             if s[i] == "(":
                 res = ""
                 i += 1
@@ -146,10 +148,12 @@ class InvertedIndex(Index):
                     i += 1          
                 tup = res.split(",")
                 posting.append(tuple([int(tup[0]), float(tup[1])]))
+            i += 1
         return {parsed[0]: posting}
     
 
 class PositionalIndex(Index):
+    # { token : [{docid : [positions]}]}
     def __init__(self) -> None:
         self.location = "final_positional_index.txt"
         self.index = defaultdict(defaultdict(list))
@@ -177,28 +181,39 @@ class PositionalIndex(Index):
         self.dump(f"positional_index{page_index//self.dump_threshold + 1}.txt")
         self.merge_files()
 
-    # not finished yet; need to add correct parsing        
-    def dict_to_str(self, iid: dict[int, list[(int, int)]]):
+    # not finished yet; need to add correct parsing 
+    # token #splitter# docid : pos1, pos2, pos3 # docid : pos1, pos2, pos3 \n
+    def dict_to_str(self, iid: dict[str, dict[int, list[int]]]):
         res = ""
-        for k in sorted(iid):
-            v = ",".join([str(i) for i in iid[k]])
-            res += str(k) + self.splitter + v + "\n"
+        for token in sorted(iid):
+            res += token + self.splitter
+            for dict in iid[token]:
+                for k in dict:
+                    v = ",".join([str(i) for i in dict[k]])
+                res += str(k) + ":" + v + "#"
+            res += '\n'
         return res
 
     def str_to_dict(self, line: str):
         parsed = line.split(self.splitter)
         posting = []
         s = parsed[1]
-        for i in range(len(parsed[1])):
-            if s[i] == "(":
-                res = ""
+        docid = ""
+        i = 0
+        while i < len(parsed[1]):
+            if s[i] == ":":
+                pos_list = ""
+                i += 1 
+                while s[i] != "#":     
+                    pos_list += s[i]
+                    i += 1 
+                posting.append({int(docid) : [int(x) for x in pos_list.split(",")]})
+                docid = ""
                 i += 1
-                while s[i] != ")":
-                    res += s[i]
-                    i += 1          
-                tup = res.split(",")
-                posting.append(tuple([int(tup[0]), float(tup[1])]))
+            docid += s[i]
+            i += 1
         return {parsed[0]: posting}
+
 
 
 def build_index_of_index(inverted_index: Index):
