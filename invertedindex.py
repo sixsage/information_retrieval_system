@@ -7,16 +7,16 @@ from bs4 import BeautifulSoup
 import json
 import os
 
+PATH_TO_PAGES = 'DEV'
 
 class Index:
     def __init__(self) -> None:
-        self.path_to_pages = 'DEV'
         self.partial_indexes = []
         self.index = defaultdict(list)
         self.dump_threshold = 15000
         self.location = ""
         self.splitter = "#$%^&"
-        self.urlindex = "urlindex.json"
+        self.token_loc = {}
     
     def tokenizer(self, content: str):
         tokens = word_tokenize(content)
@@ -84,48 +84,23 @@ class InvertedIndex(Index):
     def __init__(self) -> None:
         super().__init__()
         self.location = "final_index.txt"
-        self.urls = None
-        if not os.path.exists(self.urlindex):
-            self.urls = {}
-        if not os.path.exists(self.location):
-            self.build_index()
 
-    def build_index(self) -> None:
-        page_index = 0
-        for domain in os.scandir(self.path_to_pages):
-            for page in os.scandir(domain.path):
-                page_index += 1
-                with open(page.path, "r") as file:
-                    data = json.loads(file.read())
-                    if self.urls is not None:
-                        self.urls[page_index] = data["url"]
-                    html_content = data["content"]
-                    text = BeautifulSoup(html_content, "lxml").get_text()
-                    stems = self.tokenizer(text)
-                    for stem in stems:
-                        self.index[stem].append((page_index, stems[stem]))
+    def add_page(self, stems, page_index) -> None:
+        if page_index % self.dump_threshold == 0: 
+            self.dump(f"inverted_index{len(self.partial_indexes)}.txt")
+            self.index = defaultdict(list)
+        for stem in stems:
+            self.index[stem].append((page_index, stems[stem]))
 
-                    # check accumulated index size with sys.getsizeof(index)
-                    # if it is over some threshold, dump it into a text file
-                    # maybe we can add try/except in the case of memory overflow - MemoryError in python 
-                print(page_index)
-                if page_index % self.dump_threshold == 0: 
-                    self.dump(f"inverted_index{page_index//self.dump_threshold}.txt")
+        # check accumulated index size with sys.getsizeof(index)
+        # if it is over some threshold, dump it into a text file
+        # maybe we can add try/except in the case of memory overflow - MemoryError in python 
 
-            # if you want to test with smaller values uncomment below and change self.dump_threshold in base class
-            # (should also change self.location in this class so it doesn't mess up your current index)
-            #     if page_index > 2000:
-            #         break
-            # if page_index > 2000:
-            #     break
-            
-        self.dump(f"inverted_index{page_index//self.dump_threshold + 1}.txt")
+    def merge_partials(self):
+        self.dump(f"inverted_index{len(self.partial_indexes)}.txt")
+        self.index = defaultdict(list)
         self.merge_files()
-        
-        if self.urls is not None:
-            dumping_urls = json.dumps(self.urls)
-            with open(self.urlindex, "w") as url_index:
-                url_index.write(dumping_urls)
+            
             
     def dict_to_str(self, iid: dict[str, list[(int, int)]]):
         res = ""
@@ -151,89 +126,96 @@ class InvertedIndex(Index):
             i += 1
         return {parsed[0]: posting}
     
-
-class PositionalIndex(Index):
-    # { token : [{docid : [positions]}]}
-    def __init__(self) -> None:
-        self.location = "final_positional_index.txt"
-        self.index = defaultdict(defaultdict(list))
-        if not os.path.exists("final_positional_index.txt"):
-            self.build_index()
-
-    def build_index(self) -> None:
-        page_index = 0
-        for domain in os.scandir(self.path_to_pages):
-            for page in os.scandir(domain.path):
-                page_index += 1 # enumerate vs hash ???
-                with open(page.path, "r") as file:
-                    data = json.loads(file.read())
-                    html_content = data["content"]
-                    text = BeautifulSoup(html_content, "lxml").get_text()
-                    stems = self.tokenizer(text)
-                    position = 0
-                    for stem in stems:
-                        position += 1
-                        self.index[stem][page_index].append(position)
-                print(page_index)
-                if page_index % self.dump_threshold == 0: 
-                    self.dump(f"positional_index{page_index//self.dump_threshold}.txt")
-            
-        self.dump(f"positional_index{page_index//self.dump_threshold + 1}.txt")
-        self.merge_files()
-
-    # not finished yet; need to add correct parsing 
-    # token #splitter# docid : pos1, pos2, pos3 # docid : pos1, pos2, pos3 \n
-    def dict_to_str(self, iid: dict[str, dict[int, list[int]]]):
-        res = ""
-        for token in sorted(iid):
-            res += token + self.splitter
-            for dict in iid[token]:
-                for k in dict:
-                    v = ",".join([str(i) for i in dict[k]])
-                res += str(k) + ":" + v + "#"
-            res += '\n'
-        return res
-
-    def str_to_dict(self, line: str):
-        parsed = line.split(self.splitter)
-        posting = []
-        s = parsed[1]
-        docid = ""
-        i = 0
-        while i < len(parsed[1]):
-            if s[i] == ":":
-                pos_list = ""
-                i += 1 
-                while s[i] != "#":     
-                    pos_list += s[i]
-                    i += 1 
-                posting.append({int(docid) : [int(x) for x in pos_list.split(",")]})
-                docid = ""
-                i += 1
-            docid += s[i]
-            i += 1
-        return {parsed[0]: posting}
-
-
-
-def build_index_of_index(inverted_index: Index):
-    token_loc = {}
-    with open(inverted_index.location, encoding="utf-8") as f:
-        line = f.readline()
-        while line: 
-            info = line.split(inverted_index.splitter)
-            token_loc[info[0]] = f.tell() - len(line) - 1
+    def build_index_of_index(self):
+        with open(self.location, encoding="utf-8") as f:
             line = f.readline()
-    return token_loc
+            while line: 
+                info = line.split(self.splitter)
+                self.token_loc[info[0]] = f.tell() - len(line) - 1
+                line = f.readline()
 
-def find_token(token, token_loc, inverted_index: Index):
-    line = ''
-    with open(inverted_index.location, encoding="utf-8") as f:
-        f.seek(token_loc[token])
-        line = f.readline()
-        
-    return line
+    def find_token(self, token) -> dict:
+        line = ''
+        with open(self.location, encoding="utf-8") as f:
+            f.seek(self.token_loc[token])
+            line = f.readline()
+        return self.str_to_dict(line)
+
+# class PositionalIndex(Index):
+#     # { token : [{docid : [positions]}]}
+#     def __init__(self) -> None:
+#         self.location = "final_positional_index.txt"
+#         self.index = defaultdict(defaultdict(list))
+#         if not os.path.exists("final_positional_index.txt"):
+#             self.build_index()
+
+#     def build_index(self) -> None:
+#         pass
+#         # position = 0
+#         # for stem in stems:
+#         #     position += 1
+#         #     self.index[stem][page_index].append(position)
+#         # print(page_index)
+#         # if page_index % self.dump_threshold == 0: 
+#         #     self.dump(f"positional_index{page_index//self.dump_threshold}.txt")
             
+#         # self.dump(f"positional_index{page_index//self.dump_threshold + 1}.txt")
+#         # self.merge_files()
+
+#     # not finished yet; need to add correct parsing 
+#     # token #splitter# docid : pos1, pos2, pos3 # docid : pos1, pos2, pos3 \n
+#     def dict_to_str(self, iid: dict[str, dict[int, list[int]]]):
+#         res = ""
+#         for token in sorted(iid):
+#             res += token + self.splitter
+#             for dict in iid[token]:
+#                 for k in dict:
+#                     v = ",".join([str(i) for i in dict[k]])
+#                 res += str(k) + ":" + v + "#"
+#             res += '\n'
+#         return res
+
+#     def str_to_dict(self, line: str):
+#         parsed = line.split(self.splitter)
+#         posting = []
+#         s = parsed[1]
+#         docid = ""
+#         i = 0
+#         while i < len(parsed[1]):
+#             if s[i] == ":":
+#                 pos_list = ""
+#                 i += 1 
+#                 while s[i] != "#":     
+#                     pos_list += s[i]
+#                     i += 1 
+#                 posting.append({int(docid) : [int(x) for x in pos_list.split(",")]})
+#                 docid = ""
+#                 i += 1
+#             docid += s[i]
+#             i += 1
+#         return {parsed[0]: posting}
+
+            
+def build_indexes():
+    # initialize all indexes
+    iid = InvertedIndex()
+    page_index = 0
+    urls = {}
+    for domain in os.scandir(PATH_TO_PAGES):
+        for page in os.scandir(domain.path):
+            page_index += 1 # enumerate vs hash ???
+            with open(page.path, "r") as file:
+                data = json.loads(file.read())
+                html_content = data["content"]
+                urls[page_index] = data["url"]
+                text = BeautifulSoup(html_content, "lxml").get_text()
+                iid_stems = iid.tokenizer(text)
+                iid.add_page(iid_stems, page_index)
+                # add more
+    dumping_urls = json.dumps(urls)
+    with open("urlindex.json", "w") as url_index:
+        url_index.write(dumping_urls)
+    return iid
 
 if __name__ == "__main__":
     iid = InvertedIndex()
