@@ -14,7 +14,7 @@ class Index:
     def __init__(self) -> None:
         self.partial_indexes = []
         self.index = defaultdict(list)
-        self.dump_threshold = 15000
+        self.dump_threshold = 500
         self.location = ""
         self.splitter = "#$%^&"
         self.token_loc = {}
@@ -99,7 +99,7 @@ class Index:
 class InvertedIndex(Index):
     def __init__(self) -> None:
         super().__init__()
-        self.location = "final_index.txt"
+        self.location = "final_index1.txt"
 
     def add_page(self, stems, page_index) -> None:
         position = 0
@@ -146,65 +146,10 @@ class InvertedIndex(Index):
                 while s[i] != ")":
                     res += s[i]
                     i += 1          
-                tup = res.split(",")
-                posting.append(tuple([int(tup[0]), float(tup[1])]))
+                tup = [int(x) for x in res.split(",")]
+                posting.append(tuple(tup))
             i += 1
         return {parsed[0]: posting}
-
-
-# class PositionalIndex(Index):
-#     # { token : [{docid : [positions]}]}
-#     def __init__(self) -> None:
-#         self.location = "final_positional_index.txt"
-#         self.index = defaultdict(defaultdict(list))
-#         if not os.path.exists("final_positional_index.txt"):
-#             self.build_index()
-
-#     def build_index(self) -> None:
-#         pass
-#         # position = 0
-#         # for stem in stems:
-#         #     position += 1
-#         #     self.index[stem][page_index].append(position)
-#         # print(page_index)
-#         # if page_index % self.dump_threshold == 0: 
-#         #     self.dump(f"positional_index{page_index//self.dump_threshold}.txt")
-            
-#         # self.dump(f"positional_index{page_index//self.dump_threshold + 1}.txt")
-#         # self.merge_files()
-
-#     # not finished yet; need to add correct parsing 
-#     # token #splitter# docid : pos1, pos2, pos3 # docid : pos1, pos2, pos3 \n
-#     def dict_to_str(self, iid: dict[str, dict[int, list[int]]]):
-#         res = ""
-#         for token in sorted(iid):
-#             res += token + self.splitter
-#             for dict in iid[token]:
-#                 for k in dict:
-#                     v = ",".join([str(i) for i in dict[k]])
-#                 res += str(k) + ":" + v + "#"
-#             res += '\n'
-#         return res
-
-#     def str_to_dict(self, line: str):
-#         parsed = line.split(self.splitter)
-#         posting = []
-#         s = parsed[1]
-#         docid = ""
-#         i = 0
-#         while i < len(parsed[1]):
-#             if s[i] == ":":
-#                 pos_list = ""
-#                 i += 1 
-#                 while s[i] != "#":     
-#                     pos_list += s[i]
-#                     i += 1 
-#                 posting.append({int(docid) : [int(x) for x in pos_list.split(",")]})
-#                 docid = ""
-#                 i += 1
-#             docid += s[i]
-#             i += 1
-#         return {parsed[0]: posting}
 
 class BigramIndex(Index):
 
