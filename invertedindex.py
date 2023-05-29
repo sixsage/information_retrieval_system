@@ -45,6 +45,34 @@ def tokenizer(content: str):
     stemmed_words = [stemmer.stem(token) for token in tokens]
     return Counter(stemmed_words)
 
+# not finished yet; need to add correct parsing
+def build_position_index():
+    page_index = 0
+    ipd = defaultdict(defaultdict(list))
+    partial_indexes = []
+    for domain in os.scandir(PATH_TO_PAGES):
+        for page in os.scandir(domain.path):
+            page_index += 1 # enumerate vs hash ???
+            with open(page.path, "r") as file:
+                data = json.loads(file.read())
+                html_content = data["content"]
+                text = BeautifulSoup(html_content, "lxml").get_text()
+                stems = tokenizer(text)
+                position = 0
+                for stem in stems:
+                    position += 1
+                    ipd[stem][page_index].append(position)
+            print(page_index)
+            if page_index % 15000 == 0: 
+                dump_as_text(f"inverted_index{page_index//15000}.txt", iid)
+                partial_indexes.append(f"inverted_index{page_index//15000}.txt")
+                iid = defaultdict(list)
+    dump_as_text(f"inverted_index{page_index//15000 + 1}.txt", iid)
+    partial_indexes.append(f"inverted_index{page_index//15000 +1}.txt")
+
+
+    merge_files("position_index.txt", partial_indexes)
+                    
 def buildindex():
     #directory = input()
     iid = defaultdict(list)
