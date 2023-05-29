@@ -97,7 +97,6 @@ class Index:
 
 
 class InvertedIndex(Index):
-    # {token : [(docid, freq, [positions])]}
     def __init__(self) -> None:
         super().__init__()
         self.location = "final_index.txt"
@@ -119,7 +118,7 @@ class InvertedIndex(Index):
         self.merge_files()
             
             
-    def dict_to_str(self, iid: dict[str, list[(int)]]):
+    def dict_to_str(self, iid: dict[str, list[(int, int)]]):
         res = ""
         for k in sorted(iid):
             v = ",".join([str(i) for i in iid[k]])
@@ -138,8 +137,8 @@ class InvertedIndex(Index):
                 while s[i] != ")":
                     res += s[i]
                     i += 1          
-                tup = [int(x) for x in res.split(",")]
-                posting.append(tuple(tup))
+                tup = res.split(",")
+                posting.append(tuple([int(tup[0]), float(tup[1])]))
             i += 1
         return {parsed[0]: posting}
 
@@ -198,54 +197,95 @@ class InvertedIndex(Index):
 #             i += 1
 #         return {parsed[0]: posting}
 
-    class BigramIndex(Index):
+class BigramIndex(Index):
 
-        def __init__(self):
-            Index.__init__()
-            self.location = "bigram_index.txt"
+    def __init__(self):
+        Index.__init__()
+        self.location = "bigram_index.txt"
 
-        def add_page(self, stemmed_tokens, doc_id):
-            '''
-            input is tokens, so call bigrams
-            '''
-            token_bigrams = nltk.bigrams(stemmed_tokens)
-            bigram_count = Counter(token_bigrams)
-            for bigram, frequency in bigram_count.items():
-                self.index[bigram].append((doc_id, frequency))
+    def add_page(self, stemmed_tokens, doc_id):
+        token_bigrams = nltk.bigrams(stemmed_tokens)
+        bigram_count = Counter(token_bigrams)
+        for bigram, frequency in bigram_count.items():
+            self.index[bigram].append((doc_id, frequency))
 
-            if doc_id % self.dump_threshold == 0:
-                self.dump(f"bigram_partial{len(self.partial_indexes) + 1}.txt")
-                self.index = defaultdict(list)
-
-        def merge_partials(self):
+        if doc_id % self.dump_threshold == 0:
             self.dump(f"bigram_partial{len(self.partial_indexes) + 1}.txt")
             self.index = defaultdict(list)
-            self.merge_files()
 
-        def dict_to_str(self, bigram_index: dict[tuple(str, str), list[(int, int)]]):
-            result = ""
-            for bigram in sorted(bigram_index):
-                postings = "#@#".join(f"{doc_id},{freq}" for doc_id, freq in bigram_index[bigram])
-                bigram_string = f"{bigram[0]} {bigram[1]}"
-                result += bigram_string + self.splitter + postings + "\n"
-            return result
+    def merge_partials(self):
+        self.dump(f"bigram_partial{len(self.partial_indexes) + 1}.txt")
+        self.index = defaultdict(list)
+        self.merge_files()
 
-        def str_to_dict(self, line: str):
-            line = line.rstrip()
-            splitted = line.split(self.splitter)
-            bigram = tuple(splitted[0].split())
-            postings_str = [posting.split(",") for posting in splitted[1].split("#@#")]
-            parsed_postings = []
-            for posting in postings_str:
-                doc_id = int(posting[0])
-                freq = int(posting[1])
-                parsed_postings.append(tuple(doc_id, freq))
-            return {bigram: parsed_postings}
+    def dict_to_str(self, bigram_index: dict[tuple(str, str), list[(int, int)]]):
+        result = ""
+        for bigram in sorted(bigram_index):
+            postings = "#@#".join(f"{doc_id},{freq}" for doc_id, freq in bigram_index[bigram])
+            bigram_string = f"{bigram[0]} {bigram[1]}"
+            result += bigram_string + self.splitter + postings + "\n"
+        return result
+
+    def str_to_dict(self, line: str):
+        line = line.rstrip()
+        splitted = line.split(self.splitter)
+        bigram = tuple(splitted[0].split())
+        postings_str = [posting.split(",") for posting in splitted[1].split("#@#")]
+        parsed_postings = []
+        for posting in postings_str:
+            doc_id = int(posting[0])
+            freq = int(posting[1])
+            parsed_postings.append(tuple(doc_id, freq))
+        return {bigram: parsed_postings}
+    
+class TrigramIndex(Index):
+
+    def __init__(self):
+        Index.__init__()
+        self.location = "trigram_index.txt"
+
+    def add_page(self, stemmed_tokens, doc_id):
+        token_trigrams = nltk.trigrams(stemmed_tokens)
+        bigram_count = Counter(token_trigrams)
+        for trigram, frequency in bigram_count.items():
+            self.index[trigram].append((doc_id, frequency))
+
+        if doc_id % self.dump_threshold == 0:
+            self.dump(f"trigram_partial{len(self.partial_indexes) + 1}.txt")
+            self.index = defaultdict(list)
+
+    def merge_partials(self):
+        self.dump(f"trigram_partial{len(self.partial_indexes) + 1}.txt")
+        self.index = defaultdict(list)
+        self.merge_files()
+
+    def dict_to_str(self, trigram_index: dict[tuple(str, str), list[(int, int)]]):
+        result = ""
+        for trigram in sorted(trigram_index):
+            postings = "#@#".join(f"{doc_id},{freq}" for doc_id, freq in trigram_index[trigram])
+            bigram_string = f"{trigram[0]} {trigram[1]} {trigram[2]}"
+            result += bigram_string + self.splitter + postings + "\n"
+        return result
+    
+    def str_to_dict(self, line: str):
+        line = line.rstrip()
+        splitted = line.split(self.splitter)
+        trigram = tuple(splitted[0].split())
+        postings_str = [posting.split(",") for posting in splitted[1].split("#@#")]
+        parsed_postings = []
+        for posting in postings_str:
+            doc_id = int(posting[0])
+            freq = int(posting[1])
+            parsed_postings.append(tuple(doc_id, freq))
+        return {trigram: parsed_postings}
 
             
 def build_indexes():
     # initialize all indexes
     iid = InvertedIndex()
+    bigram_index = BigramIndex()
+    trigram_index = TrigramIndex()
+    
     page_index = 0
     urls = {}
     for domain in os.scandir(PATH_TO_PAGES):
