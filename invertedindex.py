@@ -2,6 +2,7 @@
 
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
+import nltk
 from collections import Counter, defaultdict
 from bs4 import BeautifulSoup
 import json
@@ -79,6 +80,21 @@ class Index:
         self.partial_indexes.append(filename)
         self.index = defaultdict(list)
 
+    def build_index_of_index(self):
+        with open(self.location, encoding="utf-8") as f:
+            line = f.readline()
+            while line: 
+                info = line.split(self.splitter)
+                self.token_loc[info[0]] = f.tell() - len(line) - 1
+                line = f.readline()
+
+    def find_token(self, token) -> dict:
+        line = ''
+        with open(self.location, encoding="utf-8") as f:
+            f.seek(self.token_loc[token])
+            line = f.readline()
+        return self.str_to_dict(line)
+
 
 class InvertedIndex(Index):
     def __init__(self) -> None:
@@ -125,21 +141,7 @@ class InvertedIndex(Index):
                 posting.append(tuple([int(tup[0]), float(tup[1])]))
             i += 1
         return {parsed[0]: posting}
-    
-    def build_index_of_index(self):
-        with open(self.location, encoding="utf-8") as f:
-            line = f.readline()
-            while line: 
-                info = line.split(self.splitter)
-                self.token_loc[info[0]] = f.tell() - len(line) - 1
-                line = f.readline()
 
-    def find_token(self, token) -> dict:
-        line = ''
-        with open(self.location, encoding="utf-8") as f:
-            f.seek(self.token_loc[token])
-            line = f.readline()
-        return self.str_to_dict(line)
 
 # class PositionalIndex(Index):
 #     # { token : [{docid : [positions]}]}
@@ -194,6 +196,50 @@ class InvertedIndex(Index):
 #             docid += s[i]
 #             i += 1
 #         return {parsed[0]: posting}
+
+    class BigramIndex(Index):
+
+        def __init__(self):
+            Index.__init__()
+            self.location = "bigram_index.txt"
+
+        def add_page(self, stemmed_tokens, doc_id):
+            '''
+            input is tokens, so call bigrams
+            '''
+            token_bigrams = nltk.bigrams(stemmed_tokens)
+            bigram_count = Counter(token_bigrams)
+            for bigram, frequency in bigram_count.items():
+                self.index[bigram].append((doc_id, frequency))
+
+            if doc_id % self.dump_threshold == 0:
+                self.dump(f"bigram_partial{len(self.partial_indexes) + 1}.txt")
+                self.index = defaultdict(list)
+
+        def merge_partials(self):
+            self.dump(f"bigram_partial{len(self.partial_indexes) + 1}.txt")
+            self.index = defaultdict(list)
+            self.merge_files()
+
+        def dict_to_str(self, bigram_index: dict[tuple(str, str), list[(int, int)]]):
+            result = ""
+            for bigram in sorted(bigram_index):
+                postings = "#@#".join(f"{doc_id},{freq}" for doc_id, freq in bigram_index[bigram])
+                bigram_string = f"{bigram[0]} {bigram[1]}"
+                result += bigram_string + self.splitter + postings + "\n"
+            return result
+
+        def str_to_dict(self, line: str):
+            line = line.rstrip()
+            splitted = line.split(self.splitter)
+            bigram = tuple(splitted[0].split())
+            postings_str = [posting.split(",") for posting in splitted[1].split("#@#")]
+            parsed_postings = []
+            for posting in postings_str:
+                doc_id = int(posting[0])
+                freq = int(posting[1])
+                parsed_postings.append(tuple(doc_id, freq))
+            return {bigram: parsed_postings}
 
             
 def build_indexes():
