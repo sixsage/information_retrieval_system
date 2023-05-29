@@ -81,6 +81,7 @@ class Index:
 
 
 class InvertedIndex(Index):
+    # {token : [(docid, freq, [positions])]}
     def __init__(self) -> None:
         super().__init__()
         self.location = "final_index.txt"
@@ -102,7 +103,7 @@ class InvertedIndex(Index):
         self.merge_files()
             
             
-    def dict_to_str(self, iid: dict[str, list[(int, int)]]):
+    def dict_to_str(self, iid: dict[str, list[(int)]]):
         res = ""
         for k in sorted(iid):
             v = ",".join([str(i) for i in iid[k]])
@@ -121,8 +122,8 @@ class InvertedIndex(Index):
                 while s[i] != ")":
                     res += s[i]
                     i += 1          
-                tup = res.split(",")
-                posting.append(tuple([int(tup[0]), float(tup[1])]))
+                tup = [int(x) for x in res.split(",")]
+                posting.append(tuple(tup))
             i += 1
         return {parsed[0]: posting}
     
