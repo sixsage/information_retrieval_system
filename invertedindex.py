@@ -138,7 +138,8 @@ def str_to_dict(line: str):
     parsed = line.split("#$%^& ")
     posting = []
     s = parsed[1]
-    for i in range(len(parsed[1])):
+    i = 0
+    while i < len(parsed[1]):
         if s[i] == "(":
             res = ""
             i += 1
@@ -147,6 +148,7 @@ def str_to_dict(line: str):
                 i += 1          
             tup = res.split(",")
             posting.append(tuple([int(tup[0]), float(tup[1])]))
+        i += 1
     return {parsed[0]: posting}
 
 def dump_as_text(file: str, iid: dict[int, list[(int,int)]]) -> None:
