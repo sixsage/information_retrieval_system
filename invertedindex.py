@@ -14,7 +14,7 @@ class Index:
     def __init__(self) -> None:
         self.partial_indexes = []
         self.index = defaultdict(list)
-        self.dump_threshold = 500
+        self.dump_threshold = 15000
         self.location = ""
         self.splitter = "#$%^&"
         self.token_loc = {}
@@ -99,7 +99,7 @@ class Index:
 class InvertedIndex(Index):
     def __init__(self) -> None:
         super().__init__()
-        self.location = "final_index1.txt"
+        self.location = "final_index.txt"
 
     def add_page(self, stems, page_index) -> None:
         position = 0
