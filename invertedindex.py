@@ -103,11 +103,20 @@ class InvertedIndex(Index):
         self.location = "final_index.txt"
 
     def add_page(self, stems, page_index) -> None:
+        position = 0
+        temp_index = {}
         if page_index % self.dump_threshold == 0: 
             self.dump(f"inverted_index{len(self.partial_indexes)}.txt")
             self.index = defaultdict(list)
         for stem in stems:
-            self.index[stem].append((page_index, stems[stem]))
+            position += 1
+            if stem not in temp_index:
+                temp_index[stem].extend([page_index, 1, position])
+            else:
+                temp_index[stem][1] += 1
+                temp_index[stem].append(position)
+        for stem in temp_index:
+            self.index[stem] = tuple(temp_index[stem])
 
         # check accumulated index size with sys.getsizeof(index)
         # if it is over some threshold, dump it into a text file
