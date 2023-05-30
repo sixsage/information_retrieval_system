@@ -14,21 +14,23 @@ def load_json(file):
 if __name__ == "__main__":
     #total pages need to be stored 
 
-    # if not (os.path.exists("final_index.txt") and os.path.exists("urlindex.json")):
-    #     total_pages = invertedindex.buildindex()
-    # iid = invertedindex.build_indexes()
-    #iid = load_json("inverted_index.json")
+    if not (os.path.exists("final_index.txt") and os.path.exists("urlindex.json")):
+        total_pages = invertedindex.build_indexes()
     iid = invertedindex.InvertedIndex()
-    ioi = iid.build_index_of_index()
+    iid.build_index_of_index()
+    bigrams = invertedindex.BigramIndex()
+    bigrams.build_index_of_index()
+    trigrams = invertedindex.TrigramIndex()
+    trigrams.build_index_of_index()
+    #iid = load_json("inverted_index.json")
     urls = load_json("urlindex.json")
+    stemmer = PorterStemmer()
     user_input = input("SEARCH: ")
     user_input = user_input.split()
-    stemmer = PorterStemmer()
     user_input = [stemmer.stem(token) for token in user_input]
     query_iid = {}
     for token in user_input:
         query_iid.update(iid.find_token(token))
-    
     target_doc_ids = search.query_processing(user_input, query_iid, TOTAL_PAGES)
     # for doc_id in target_doc_ids:
     #     #print(doc_id)
