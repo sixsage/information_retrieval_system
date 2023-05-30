@@ -23,7 +23,7 @@ class Index:
         tokens = word_tokenize(content)
         stemmer = PorterStemmer()
         stemmed_words = [stemmer.stem(token) for token in tokens]
-        return Counter(stemmed_words)
+        return stemmed_words
     
     def merge_postings(self, allpostings):
         res = []
@@ -103,7 +103,7 @@ class InvertedIndex(Index):
 
     def add_page(self, stems, page_index) -> None:
         position = 0
-        temp_index = {}
+        temp_index = defaultdict(list)
         if page_index % self.dump_threshold == 0: 
             self.dump(f"inverted_index{len(self.partial_indexes)}.txt")
             self.index = defaultdict(list)
@@ -154,7 +154,7 @@ class InvertedIndex(Index):
 class BigramIndex(Index):
 
     def __init__(self):
-        Index.__init__()
+        Index.__init__(self)
         self.location = "bigram_index.txt"
 
     def add_page(self, stemmed_tokens, doc_id):
@@ -172,7 +172,7 @@ class BigramIndex(Index):
         self.index = defaultdict(list)
         self.merge_files()
 
-    def dict_to_str(self, bigram_index: dict[tuple(str, str), list[(int, int)]]):
+    def dict_to_str(self, bigram_index: dict[tuple(), list[(int, int)]]):
         result = ""
         for bigram in sorted(bigram_index):
             postings = "#@#".join(f"{doc_id},{freq}" for doc_id, freq in bigram_index[bigram])
@@ -189,13 +189,29 @@ class BigramIndex(Index):
         for posting in postings_str:
             doc_id = int(posting[0])
             freq = int(posting[1])
-            parsed_postings.append(tuple(doc_id, freq))
+            parsed_postings.append((doc_id, freq))
         return {bigram: parsed_postings}
+    
+    def build_index_of_index(self):
+        with open(self.location, encoding="utf-8") as f:
+            line = f.readline()
+            while line: 
+                info = line.split(self.splitter)
+                token = tuple(info[0].split())
+                self.token_loc[token] = f.tell() - len(line) - 1
+                line = f.readline()
+
+    def find_token(self, token) -> dict:
+        line = ''
+        with open(self.location, encoding="utf-8") as f:
+            f.seek(self.token_loc[token])
+            line = f.readline()
+        return self.str_to_dict(line)
     
 class TrigramIndex(Index):
 
     def __init__(self):
-        Index.__init__()
+        Index.__init__(self)
         self.location = "trigram_index.txt"
 
     def add_page(self, stemmed_tokens, doc_id):
@@ -213,7 +229,7 @@ class TrigramIndex(Index):
         self.index = defaultdict(list)
         self.merge_files()
 
-    def dict_to_str(self, trigram_index: dict[tuple(str, str), list[(int, int)]]):
+    def dict_to_str(self, trigram_index: dict[tuple(), list[(int, int)]]):
         result = ""
         for trigram in sorted(trigram_index):
             postings = "#@#".join(f"{doc_id},{freq}" for doc_id, freq in trigram_index[trigram])
@@ -230,8 +246,24 @@ class TrigramIndex(Index):
         for posting in postings_str:
             doc_id = int(posting[0])
             freq = int(posting[1])
-            parsed_postings.append(tuple(doc_id, freq))
+            parsed_postings.append((doc_id, freq))
         return {trigram: parsed_postings}
+    
+    def build_index_of_index(self):
+        with open(self.location, encoding="utf-8") as f:
+            line = f.readline()
+            while line: 
+                info = line.split(self.splitter)
+                token = tuple(info[0].split())
+                self.token_loc[token] = f.tell() - len(line) - 1
+                line = f.readline()
+
+    def find_token(self, token) -> dict:
+        line = ''
+        with open(self.location, encoding="utf-8") as f:
+            f.seek(self.token_loc[token])
+            line = f.readline()
+        return self.str_to_dict(line)
 
             
 def build_indexes():
@@ -245,18 +277,29 @@ def build_indexes():
     for domain in os.scandir(PATH_TO_PAGES):
         for page in os.scandir(domain.path):
             page_index += 1 # enumerate vs hash ???
+            print(page_index)
             with open(page.path, "r") as file:
                 data = json.loads(file.read())
                 html_content = data["content"]
                 urls[page_index] = data["url"]
                 text = BeautifulSoup(html_content, "lxml").get_text()
-                iid_stems = iid.tokenizer(text)
-                iid.add_page(iid_stems, page_index)
+                stems = iid.tokenizer(text)
+                iid.add_page(stems, page_index)
+                bigram_index.add_page(stems, page_index)
+                trigram_index.add_page(stems, page_index)
                 # add more
+        #         if page_index >= 2000:
+        #             break
+
+        # if page_index >= 2000:
+        #     break
+
+    iid.merge_partials()
+    bigram_index.merge_partials()
+    trigram_index.merge_partials()
     dumping_urls = json.dumps(urls)
     with open("urlindex.json", "w") as url_index:
         url_index.write(dumping_urls)
-    return iid
 
 if __name__ == "__main__":
     iid = InvertedIndex()
