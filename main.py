@@ -14,7 +14,7 @@ def load_json(file):
 if __name__ == "__main__":
     #total pages need to be stored 
 
-    if not (os.path.exists("final_index.txt") and os.path.exists("urlindex.json")):
+    if not (os.path.exists("final_index1.txt") and os.path.exists("urlindex.json")):
         total_pages = invertedindex.build_indexes()
     iid = invertedindex.InvertedIndex()
     iid.build_index_of_index()
@@ -31,10 +31,11 @@ if __name__ == "__main__":
     query_iid = {}
     for token in user_input:
         query_iid.update(iid.find_token(token))
+    print(query_iid)
     target_doc_ids = search.query_processing(user_input, query_iid, TOTAL_PAGES)
     # for doc_id in target_doc_ids:
     #     #print(doc_id)
     #     print(urls[str(doc_id)])
-    print("Top 5 urls: ")
-    for doc_id in target_doc_ids[:5]:
+    print("Top 10 urls: ")
+    for doc_id in target_doc_ids[:10]:
         print(urls[str(doc_id)])

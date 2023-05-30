@@ -156,6 +156,7 @@ class BigramIndex(Index):
     def __init__(self):
         Index.__init__(self)
         self.location = "bigram_index.txt"
+        self.dump_threshold = 10000
 
     def add_page(self, stemmed_tokens, doc_id):
         token_bigrams = nltk.bigrams(stemmed_tokens)
@@ -213,6 +214,7 @@ class TrigramIndex(Index):
     def __init__(self):
         Index.__init__(self)
         self.location = "trigram_index.txt"
+        self.dump_threshold = 10000
 
     def add_page(self, stemmed_tokens, doc_id):
         token_trigrams = nltk.trigrams(stemmed_tokens)
