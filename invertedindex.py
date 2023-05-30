@@ -23,7 +23,7 @@ class Index:
         tokens = word_tokenize(content)
         stemmer = PorterStemmer()
         stemmed_words = [stemmer.stem(token) for token in tokens]
-        return Counter(stemmed_words)
+        return stemmed_words
     
     def merge_postings(self, allpostings):
         res = []
@@ -99,7 +99,7 @@ class Index:
 class InvertedIndex(Index):
     def __init__(self) -> None:
         super().__init__()
-        self.location = "final_index.txt"
+        self.location = "final_index1.txt"
 
     def add_page(self, stems, page_index) -> None:
         position = 0
@@ -110,12 +110,12 @@ class InvertedIndex(Index):
         for stem in stems:
             position += 1
             if stem not in temp_index:
-                temp_index[stem].extend([page_index, 1, position])
+                temp_index[stem] = [page_index, 1, position]
             else:
                 temp_index[stem][1] += 1
                 temp_index[stem].append(position)
         for stem in temp_index:
-            self.index[stem] = tuple(temp_index[stem])
+            self.index[stem].append(tuple(temp_index[stem]))
 
         # check accumulated index size with sys.getsizeof(index)
         # if it is over some threshold, dump it into a text file
@@ -172,7 +172,7 @@ class BigramIndex(Index):
         self.index = defaultdict(list)
         self.merge_files()
 
-    def dict_to_str(self, bigram_index: dict[tuple(str, str), list[(int, int)]]):
+    def dict_to_str(self, bigram_index: dict[tuple[str, str], list[(int, int)]]):
         result = ""
         for bigram in sorted(bigram_index):
             postings = "#@#".join(f"{doc_id},{freq}" for doc_id, freq in bigram_index[bigram])
@@ -213,7 +213,7 @@ class TrigramIndex(Index):
         self.index = defaultdict(list)
         self.merge_files()
 
-    def dict_to_str(self, trigram_index: dict[tuple(str, str), list[(int, int)]]):
+    def dict_to_str(self, trigram_index: dict[tuple[str, str], list[(int, int)]]):
         result = ""
         for trigram in sorted(trigram_index):
             postings = "#@#".join(f"{doc_id},{freq}" for doc_id, freq in trigram_index[trigram])
@@ -237,14 +237,15 @@ class TrigramIndex(Index):
 def build_indexes():
     # initialize all indexes
     iid = InvertedIndex()
-    bigram_index = BigramIndex()
-    trigram_index = TrigramIndex()
+    #bigram_index = BigramIndex()
+    #trigram_index = TrigramIndex()
     
     page_index = 0
     urls = {}
     for domain in os.scandir(PATH_TO_PAGES):
         for page in os.scandir(domain.path):
             page_index += 1 # enumerate vs hash ???
+            print(page_index)
             with open(page.path, "r") as file:
                 data = json.loads(file.read())
                 html_content = data["content"]
@@ -253,6 +254,7 @@ def build_indexes():
                 iid_stems = iid.tokenizer(text)
                 iid.add_page(iid_stems, page_index)
                 # add more
+    iid.merge_partials()
     dumping_urls = json.dumps(urls)
     with open("urlindex.json", "w") as url_index:
         url_index.write(dumping_urls)

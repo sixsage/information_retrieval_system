@@ -47,9 +47,9 @@ def query_processing(terms: list[str], iid: dict[str, list[(int, int)]], total_p
     doc_scores = defaultdict(list)
     for term in terms:
         if intersection == None:
-            intersection = iid[term]
+            intersection = [(x[0], x[1]) for x in iid[term]]
         else:
-            new_term_postings = iid[term]
+            new_term_postings = [(x[0], x[1]) for x in iid[term]]
             intersection = get_intersection(intersection, new_term_postings)
         for doc_id, frequency in intersection:
             doc_scores[doc_id].append(1+ math.log(frequency))

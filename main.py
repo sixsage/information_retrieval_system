@@ -16,17 +16,18 @@ if __name__ == "__main__":
 
     # if not (os.path.exists("final_index.txt") and os.path.exists("urlindex.json")):
     #     total_pages = invertedindex.buildindex()
-    iid = invertedindex.InvertedIndex()
+    # iid = invertedindex.build_indexes()
     #iid = load_json("inverted_index.json")
-    ioi = invertedindex.build_index_of_index(iid)
-    urls = load_json(iid.urlindex)
+    iid = invertedindex.InvertedIndex()
+    ioi = iid.build_index_of_index()
+    urls = load_json("urlindex.json")
     user_input = input("SEARCH: ")
     user_input = user_input.split()
     stemmer = PorterStemmer()
     user_input = [stemmer.stem(token) for token in user_input]
     query_iid = {}
     for token in user_input:
-        query_iid.update(iid.str_to_dict(invertedindex.find_token(token, ioi, iid)))
+        query_iid.update(iid.find_token(token))
     
     target_doc_ids = search.query_processing(user_input, query_iid, TOTAL_PAGES)
     # for doc_id in target_doc_ids:
