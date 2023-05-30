@@ -7,6 +7,7 @@ from collections import Counter, defaultdict
 from bs4 import BeautifulSoup
 import json
 import os
+import duplicatecheck
 
 PATH_TO_PAGES = 'DEV'
 
@@ -19,8 +20,8 @@ class Index:
         self.splitter = "#$%^&"
         self.token_loc = {}
     
-    def tokenizer(self, content: str):
-        tokens = word_tokenize(content)
+    def tokenizer(self, tokens: list[str]):
+        # tokens = word_tokenize(content)
         stemmer = PorterStemmer()
         stemmed_words = [stemmer.stem(token) for token in tokens]
         return stemmed_words
@@ -276,6 +277,7 @@ def build_indexes():
     
     page_index = 0
     urls = {}
+    simhash_values = []
     for domain in os.scandir(PATH_TO_PAGES):
         for page in os.scandir(domain.path):
             page_index += 1 # enumerate vs hash ???
@@ -285,10 +287,17 @@ def build_indexes():
                 html_content = data["content"]
                 urls[page_index] = data["url"]
                 text = BeautifulSoup(html_content, "lxml").get_text()
-                stems = iid.tokenizer(text)
-                iid.add_page(stems, page_index)
-                bigram_index.add_page(stems, page_index)
-                trigram_index.add_page(stems, page_index)
+                tokens = word_tokenize(text)
+
+                # dup check goes here
+                hash_value = duplicatecheck.hash(Counter(tokens))
+                is_duplicate = duplicatecheck.duplicate_exists(hash_value, simhash_values)
+                simhash_values.append(hash_value)
+                if not is_duplicate:
+                    stems = iid.tokenizer(tokens)
+                    iid.add_page(stems, page_index)
+                    bigram_index.add_page(stems, page_index)
+                    trigram_index.add_page(stems, page_index)
                 # add more
         #         if page_index >= 2000:
         #             break
