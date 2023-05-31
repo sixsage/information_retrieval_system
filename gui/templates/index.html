@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/main.css') }}">
+        <title>LOOKITUP</title>
+    </head>
+    <body>
+        <h1> LOOK IT UP </h1>
+        <p>
+            <form action="/results.php">
+                <input type="text" id="query" name="query"><br>
+            </form>
+        </p>
+    </body>
+</html>
