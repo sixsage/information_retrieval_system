@@ -129,11 +129,11 @@ class InvertedIndex(Index):
             
             
     def dict_to_str(self, iid: dict[str, list[(int, int)]]):
-        res = ""
+        res = []
         for k in sorted(iid):
             v = ",".join([str(i) for i in iid[k]])
-            res += str(k) + self.splitter + v + "\n"
-        return res
+            res.append(str(k) + self.splitter + v + "\n")
+        return ''.join(res)
 
     def str_to_dict(self, line: str):
         parsed = line.split(self.splitter)
@@ -175,12 +175,12 @@ class BigramIndex(Index):
         self.merge_files()
 
     def dict_to_str(self, bigram_index: dict[tuple[str, str], list[(int, int)]]):
-        result = ""
+        result = []
         for bigram in sorted(bigram_index):
             postings = "#@#".join(f"{doc_id},{freq}" for doc_id, freq in bigram_index[bigram])
             bigram_string = f"{bigram[0]} {bigram[1]}"
-            result += bigram_string + self.splitter + postings + "\n"
-        return result
+            result.append(bigram_string + self.splitter + postings + "\n")
+        return ''.join(result)
 
     def str_to_dict(self, line: str):
         line = line.rstrip()
@@ -233,12 +233,12 @@ class TrigramIndex(Index):
         self.merge_files()
 
     def dict_to_str(self, trigram_index: dict[tuple[str, str], list[(int, int)]]):
-        result = ""
+        result = []
         for trigram in sorted(trigram_index):
             postings = "#@#".join(f"{doc_id},{freq}" for doc_id, freq in trigram_index[trigram])
             bigram_string = f"{trigram[0]} {trigram[1]} {trigram[2]}"
-            result += bigram_string + self.splitter + postings + "\n"
-        return result
+            result.append(bigram_string + self.splitter + postings + "\n")
+        return ''.join(result)
     
     def str_to_dict(self, line: str):
         line = line.rstrip()
@@ -277,15 +277,13 @@ def build_indexes():
     
     page_index = 0
     urls = {}
-    simhash_values = []
+    # dup_pages = []
     for domain in os.scandir(PATH_TO_PAGES):
+        simhash_values = []
         for page in os.scandir(domain.path):
-            page_index += 1 # enumerate vs hash ???
-            print(page_index)
             with open(page.path, "r") as file:
                 data = json.loads(file.read())
                 html_content = data["content"]
-                urls[page_index] = data["url"]
                 text = BeautifulSoup(html_content, "lxml").get_text()
                 tokens = word_tokenize(text)
 
@@ -293,16 +291,22 @@ def build_indexes():
                 hash_value = duplicatecheck.hash(Counter(tokens))
                 is_duplicate = duplicatecheck.duplicate_exists(hash_value, simhash_values)
                 simhash_values.append(hash_value)
+                # if is_duplicate:
+                #     dup_pages.append(data["url"])
+                # else:
                 if not is_duplicate:
+                    page_index += 1 # enumerate vs hash ???
+                    urls[page_index] = data["url"]
+                    print(page_index)
                     stems = iid.tokenizer(tokens)
                     iid.add_page(stems, page_index)
                     bigram_index.add_page(stems, page_index)
                     trigram_index.add_page(stems, page_index)
                 # add more
-        #         if page_index >= 2000:
+        #         if page_index >= 3000:
         #             break
 
-        # if page_index >= 2000:
+        # if page_index >= 3000:
         #     break
 
     iid.merge_partials()
@@ -311,6 +315,7 @@ def build_indexes():
     dumping_urls = json.dumps(urls)
     with open("urlindex.json", "w") as url_index:
         url_index.write(dumping_urls)
+    # print(dup_pages)
 
 if __name__ == "__main__":
     iid = InvertedIndex()
