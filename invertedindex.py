@@ -268,6 +268,7 @@ class TrigramIndex(Index):
 def build_indexes():
     # initialize all indexes
     headings_iid = InvertedIndex("final_headings_index.txt", "headings_index")
+    tagged_iid = InvertedIndex("final_tagged_index.txt", "tagged_index")
     iid = InvertedIndex()
     bigram_index = BigramIndex()
     trigram_index = TrigramIndex()
@@ -288,8 +289,11 @@ def build_indexes():
                 text = soup.get_text()
                 tokens = tokenizer.tokenize(text)
                 heading_content = str(soup.find_all(["h1"]))
+                tagged_content = str(soup.find_all(["h2", "h3,", "h4","h5","h6","h7" "b", "strong", "i"]))
                 heading_text = BeautifulSoup(heading_content, "lxml").get_text()
+                tagged_text =  BeautifulSoup(tagged_content, "lxml").get_text()
                 heading_tokens = tokenizer.tokenize(heading_text)
+                tagged_tokens = tokenizer.tokenize(tagged_text)
 
                 # dup check goes here
                 hash_value = duplicatecheck.hash(Counter(tokens))
@@ -306,6 +310,8 @@ def build_indexes():
                     heading_stems = headings_iid.stemmer(heading_tokens)
                     headings_iid.add_page(heading_stems,page_index)
                     iid.add_page(stems, page_index)
+                    tagged_stems = tagged_iid.stemmer(tagged_tokens)
+                    tagged_iid.add_page(tagged_stems,page_index)
                     bigram_index.add_page(stems, page_index)
                     trigram_index.add_page(stems, page_index)
                 # add more
@@ -317,6 +323,7 @@ def build_indexes():
 
     iid.merge_partials()
     headings_iid.merge_partials()
+    tagged_iid.merge_partials()
     bigram_index.merge_partials()
     trigram_index.merge_partials()
     dumping_urls = json.dumps(urls)

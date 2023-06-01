@@ -22,6 +22,8 @@ if __name__ == "__main__":
     headings_iid.build_index_of_index()
     iid = invertedindex.InvertedIndex()
     iid.build_index_of_index()
+    tagged_iid = invertedindex.InvertedIndex("final_tagged_index.txt", "tagged_index")
+    tagged_iid.build_index_of_index()
     bigrams = invertedindex.BigramIndex()
     bigrams.build_index_of_index()
     trigrams = invertedindex.TrigramIndex()
@@ -35,9 +37,11 @@ if __name__ == "__main__":
     user_input = [stemmer.stem(token) for token in user_input]
     query_iid = {}
     hedings = {}
+    tagged = {}
     for token in user_input:
         query_iid.update(iid.find_token(token))
         hedings.update(headings_iid.find_token(token))
+        tagged.update(tagged_iid.find_token(token))
     # print(query_iid)
 
     # MULTIPROCESSING IN PROGRESS
@@ -48,7 +52,7 @@ if __name__ == "__main__":
 
     # processpositional = multiprocessing.Process(target=search.query_processing, args=[search.trigramify_query(user_input), trigrams, TOTAL_PAGES])
 
-    target_doc_ids = search.query_processing(user_input, query_iid, TOTAL_PAGES, hedings)
+    target_doc_ids = search.query_processing(user_input, query_iid, TOTAL_PAGES, hedings, tagged)
     end_time = datetime.datetime.now()
     duration = (strat_time - end_time).microseconds /1000
 

@@ -40,23 +40,29 @@ def get_intersection(intersection: list[(int, int)], new_term_postings) -> list[
 def cosine_similarity(list1: list[int], list2: list[int]):
     return numpy.dot(list1, list2) / (numpy.linalg.norm(list1) * numpy.linalg.norm(list2))
 
-def query_processing(terms: list[str], iid: dict[str, list[tuple[int]]], total_pages, headings_iid:dict[str, list[tuple[int]]]) -> list[int]:
+def query_processing(terms: list[str], iid: dict[str, list[tuple[int]]], total_pages, tagged_iid, headings_iid:dict[str, list[tuple[int]]]) -> list[int]:
     terms = sorted(terms, key=lambda x: len(iid[x]))
     intersection = None
     headings_intersection = None
+    tagged_intersection = None
     doc_scores = defaultdict(list)
     for term in terms:
         if headings_intersection == None:
             headings_intersection = [(x[0], x[1]) for x in headings_iid[term]]
+        if tagged_intersection == None:
+            tagged_intersection = [(x[0], x[1]) for x in tagged_iid[term]]
         if intersection == None:
             intersection = [(x[0], x[1]) for x in iid[term]]
         else:
             new_term_postings = [(x[0], x[1]) for x in iid[term]]
             intersection = get_intersection(intersection, new_term_postings)
             headings_intersection = get_intersection(intersection,headings_intersection)
+            tagged_intersection = get_intersection(intersection, tagged_intersection)
         for doc_id, frequency in intersection:
             if (doc_id, frequency) in headings_intersection:
                 doc_scores[doc_id].append((1+ math.log(frequency))*1.3)
+            elif (doc_id,frequency) in tagged_intersection:
+                doc_scores[doc_id].append((1+ math.log(frequency))*1.1)
             else:
                 doc_scores[doc_id].append(1+ math.log(frequency))
     
