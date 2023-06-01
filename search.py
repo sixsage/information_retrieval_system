@@ -40,8 +40,11 @@ def get_intersection(intersection: list[(int, int)], new_term_postings) -> list[
 def cosine_similarity(list1: list[int], list2: list[int]):
     return numpy.dot(list1, list2) / (numpy.linalg.norm(list1) * numpy.linalg.norm(list2))
 
-def query_processing(terms: list[str], iid: dict[str, list[tuple[int]]], total_pages, tagged_iid, headings_iid:dict[str, list[tuple[int]]]) -> list[int]:
-    terms = sorted(terms, key=lambda x: len(iid[x]))
+def query_processing(q, terms: list[str | tuple], iid: dict[str, list[tuple[int]]], total_pages) -> list[int]:
+    query_iid = {}
+    for token in terms:
+        query_iid.update(iid.find_token(token))
+    terms = sorted(terms, key=lambda x: len(query_iid[x]))
     intersection = None
     headings_intersection = None
     tagged_intersection = None
@@ -52,9 +55,9 @@ def query_processing(terms: list[str], iid: dict[str, list[tuple[int]]], total_p
         if tagged_intersection == None:
             tagged_intersection = [(x[0], x[1]) for x in tagged_iid[term]]
         if intersection == None:
-            intersection = [(x[0], x[1]) for x in iid[term]]
+            intersection = [(x[0], x[1]) for x in query_iid[term]]
         else:
-            new_term_postings = [(x[0], x[1]) for x in iid[term]]
+            new_term_postings = [(x[0], x[1]) for x in query_iid[term]]
             intersection = get_intersection(intersection, new_term_postings)
             headings_intersection = get_intersection(intersection,headings_intersection)
             tagged_intersection = get_intersection(intersection, tagged_intersection)
@@ -70,15 +73,22 @@ def query_processing(terms: list[str], iid: dict[str, list[tuple[int]]], total_p
     query_as_doc = Counter(terms)
     query_score = []
     for term in terms:
-        query_score.append(tf_idf(term, -1, iid, total_pages, term_frequency=query_as_doc[term]))
+        print(term)
+        query_score.append(tf_idf(term, -1, query_iid, total_pages, term_frequency=query_as_doc[term]))
     pages_with_all_terms = [doc_id for doc_id in doc_scores if len(doc_scores[doc_id]) == len(query_score)]
     ranking = sorted(pages_with_all_terms, 
                      key= lambda doc_id: cosine_similarity(doc_scores[doc_id], query_score), reverse=True)
-    return ranking
+    print(ranking)
+    q.put(ranking)
 
 def bigramify_query(terms: list[str]) -> list[str]:
     'Change query to index bigrams index'
-    pass
+    bigrams = []
+    prev = terms[0]
+    for term in terms[1:]:
+        bigrams.append((prev, term))
+    return bigrams
+        
 
 def trigramify_query(terms: list[str]) -> list[str]:
     'Change query to index trigrams index'
