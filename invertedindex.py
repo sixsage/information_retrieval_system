@@ -136,26 +136,13 @@ class InvertedIndex(Index):
     def dict_to_str(self, iid: dict[str, list[(int, int)]]):
         res = []
         for k in sorted(iid):
-            v = ",".join([str(i) for i in iid[k]])
+            v = "#@#".join([",".join([str(element) for element in tup]) for tup in iid[k]])
             res.append(str(k) + self.splitter + v + "\n")
         return ''.join(res)
 
     def str_to_dict(self, line: str):
-        #print('str->dict', line)
-        parsed = line.split(self.splitter)
-        posting = []
-        s = parsed[1]
-        i = 0
-        while i < len(parsed[1]):
-            if s[i] == "(":
-                res = ""
-                i += 1
-                while s[i] != ")":
-                    res += s[i]
-                    i += 1          
-                tup = [int(x) for x in res.split(",")]
-                posting.append(tuple(tup))
-            i += 1
+        parsed = line.strip().split(self.splitter)
+        posting = [tuple([int(num_str) for num_str in doc.split(",")]) for doc in parsed[1].split("#@#")]
         return {parsed[0]: posting}
 
 class BigramIndex(Index):
@@ -287,7 +274,7 @@ def build_indexes():
     
     page_index = 0
     urls = {}
-    dup_pages = []
+    # dup_pages = []
     tokenizer = RegexpTokenizer(r'[a-zA-Z0-9]+')
     for domain in os.scandir(PATH_TO_PAGES):
         simhash_values = []
