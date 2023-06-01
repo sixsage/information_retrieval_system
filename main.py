@@ -35,13 +35,6 @@ if __name__ == "__main__":
     strat_time = datetime.datetime.now()
     user_input = user_input.split()
     user_input = [stemmer.stem(token) for token in user_input]
-    query_iid = {}
-    hedings = {}
-    tagged = {}
-    for token in user_input:
-        query_iid.update(iid.find_token(token))
-        hedings.update(headings_iid.find_token(token))
-        tagged.update(tagged_iid.find_token(token))
     # print(query_iid)
 
     # MULTIPROCESSING IN PROGRESS

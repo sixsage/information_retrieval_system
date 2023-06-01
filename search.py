@@ -42,8 +42,12 @@ def cosine_similarity(list1: list[int], list2: list[int]):
 
 def query_processing(q, terms: list[str | tuple], iid: dict[str, list[tuple[int]]], total_pages, headings_iid:dict[str, list[tuple[int]]], tagged_iid) -> list[int]:
     query_iid = {}
+    headings = {}
+    tagged = {}
     for token in terms:
         query_iid.update(iid.find_token(token))
+        headings.update(headings_iid.find_token(token))
+        tagged.update(tagged_iid.find_token(token))
     terms = sorted(terms, key=lambda x: len(query_iid[x]))
     intersection = None
     headings_intersection = None
@@ -51,9 +55,9 @@ def query_processing(q, terms: list[str | tuple], iid: dict[str, list[tuple[int]
     doc_scores = defaultdict(list)
     for term in terms:
         if headings_intersection == None:
-            headings_intersection = [(x[0], x[1]) for x in headings_iid[term]]
+            headings_intersection = [(x[0], x[1]) for x in headings[term]]
         if tagged_intersection == None:
-            tagged_intersection = [(x[0], x[1]) for x in tagged_iid[term]]
+            tagged_intersection = [(x[0], x[1]) for x in tagged[term]]
         if intersection == None:
             intersection = [(x[0], x[1]) for x in query_iid[term]]
         else:
