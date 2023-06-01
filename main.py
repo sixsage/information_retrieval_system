@@ -3,6 +3,7 @@ import invertedindex
 from nltk.stem import PorterStemmer
 import os
 import json
+import multiprocessing
 
 TOTAL_PAGES = 55393
 
@@ -32,7 +33,18 @@ if __name__ == "__main__":
     for token in user_input:
         query_iid.update(iid.find_token(token))
     # print(query_iid)
+
+    # MULTIPROCESSING IN PROGRESS
+    # make the query_iid in query_processing? passing in the index objects for now
+    # processbigrams = multiprocessing.Process(target=search.query_processing, args=[search.bigramify_query(user_input), bigrams, TOTAL_PAGES])
+
+    # processtrigrams = multiprocessing.Process(target=search.query_processing, args=[search.trigramify_query(user_input), trigrams, TOTAL_PAGES])
+
+    # processpositional = multiprocessing.Process(target=search.query_processing, args=[search.trigramify_query(user_input), trigrams, TOTAL_PAGES])
+
     target_doc_ids = search.query_processing(user_input, query_iid, TOTAL_PAGES)
+
+
     # for doc_id in target_doc_ids:
     #     #print(doc_id)
     #     print(urls[str(doc_id)])
