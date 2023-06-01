@@ -45,6 +45,6 @@ def duplicate_exists(target_hash, prev_simhash):
     '''
     for prev in prev_simhash:
         calc = hash_distance(prev, target_hash)
-        if calc <= 20:
+        if calc <= 10:
             return True
     return False

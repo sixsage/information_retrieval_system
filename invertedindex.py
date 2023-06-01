@@ -1,7 +1,7 @@
 # Names: Jacob Lee Kyuho Oh Aali Bin Rehan
 
 from nltk.stem import PorterStemmer
-from nltk.tokenize import word_tokenize
+from nltk.tokenize import RegexpTokenizer
 import nltk
 from collections import Counter, defaultdict
 from bs4 import BeautifulSoup
@@ -20,7 +20,7 @@ class Index:
         self.splitter = "#$%^&"
         self.token_loc = {}
     
-    def tokenizer(self, tokens: list[str]):
+    def stemmer(self, tokens: list[str]):
         # tokens = word_tokenize(content)
         stemmer = PorterStemmer()
         stemmed_words = [stemmer.stem(token) for token in tokens]
@@ -277,15 +277,18 @@ def build_indexes():
     
     page_index = 0
     urls = {}
-    # dup_pages = []
+    dup_pages = []
+    tokenizer = RegexpTokenizer(r'\w+')
     for domain in os.scandir(PATH_TO_PAGES):
         simhash_values = []
+        # if domain.name != "www_informatics_uci_edu":
+        #     continue
         for page in os.scandir(domain.path):
             with open(page.path, "r") as file:
                 data = json.loads(file.read())
                 html_content = data["content"]
                 text = BeautifulSoup(html_content, "lxml").get_text()
-                tokens = word_tokenize(text)
+                tokens = tokenizer.tokenize(text)
 
                 # dup check goes here
                 hash_value = duplicatecheck.hash(Counter(tokens))
@@ -298,7 +301,7 @@ def build_indexes():
                     page_index += 1 # enumerate vs hash ???
                     urls[page_index] = data["url"]
                     print(page_index)
-                    stems = iid.tokenizer(tokens)
+                    stems = iid.stemmer(tokens)
                     iid.add_page(stems, page_index)
                     bigram_index.add_page(stems, page_index)
                     trigram_index.add_page(stems, page_index)
