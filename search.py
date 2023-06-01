@@ -85,6 +85,26 @@ def query_processing(q, terms: list[str | tuple], iid: dict[str, list[tuple[int]
     print(ranking)
     q.put(ranking)
 
+'''
+def query_processing(all the index and the query):
+    if query is more than 1 word: bigramify query
+    if query is more than 2 words: trigramify query
+
+    by process i mean return a dict {docid: processed score}
+    these processes can be multiprocessed ig
+
+    process the 1 word index + header + tagged
+    these all have keys as 1 word, so after processing 1 word index
+    apply the multiplier 
+
+    process bigrams
+
+    process trigrams
+
+    idk how to combine these scores, but one way is to add them
+    the best documents would have the highest scores
+'''
+
 def bigramify_query(terms: list[str]) -> list[str]:
     'Change query to index bigrams index'
     bigrams = []
