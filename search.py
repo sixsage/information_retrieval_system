@@ -40,7 +40,7 @@ def get_intersection(intersection: list[(int, int)], new_term_postings) -> list[
 def cosine_similarity(list1: list[int], list2: list[int]):
     return numpy.dot(list1, list2) / (numpy.linalg.norm(list1) * numpy.linalg.norm(list2))
 
-def query_processing(terms: list[str], iid: dict[str, list[(int, int)]], total_pages) -> list[int]:
+def query_processing(terms: list[str], iid: dict[str, list[tuple[int]]], total_pages) -> list[int]:
     terms = sorted(terms, key=lambda x: len(iid[x]))
     intersection = None
     doc_scores = defaultdict(list)
@@ -53,15 +53,6 @@ def query_processing(terms: list[str], iid: dict[str, list[(int, int)]], total_p
         for doc_id, frequency in intersection:
             doc_scores[doc_id].append(1+ math.log(frequency))
     
-    # for tf idf sum ranking
-    # for term in terms:
-    #     for doc_id, _ in intersection:
-    #         doc_scores[doc_id].append(tf_idf(term, doc_id, iid, total_pages))
-
-    # for cosine similarity
-    # for term in terms:
-    #     for doc_id, frequency in intersection:
-    #         doc_scores[doc_id].append(1+ math.log(frequency))
     # calculate the cosine similarity
     query_as_doc = Counter(terms)
     query_score = []
@@ -72,30 +63,33 @@ def query_processing(terms: list[str], iid: dict[str, list[(int, int)]], total_p
                      key= lambda doc_id: cosine_similarity(doc_scores[doc_id], query_score), reverse=True)
     return ranking
 
-    # for tf_idf sum ranking
-    # ranking = sorted(doc_scores.keys(), key=lambda doc_id: sum(doc_scores[doc_id]), reverse=True)
-    # return ranking
+def bigramify_query(terms: list[str]) -> list[str]:
+    'Change query to index bigrams index'
+    pass
 
-    # for term in terms:
-    #     if docs == None:
-    #         docs = iid[term]
-    #     new_docs = iid[term]
-    #     i = 0 # index for old docs
-    #     u = 0 # index for new term docs
-    #     new = [] # resulting intersection of docs
-    #     while i < len(docs) and u < len(new_docs):
-    #         if docs[i][0] == new_docs[u][0]:
-    #             if str(docs[i][0]) not in ranks:
-    #                 rank = tf_idf(term, docs[i][0], iid, total_pages)
-    #                 ranks[str(docs[i][0])] = rank
-    #             new.append(docs[i])
-    #             i += 1
-    #             u += 1
-    #         elif docs[i][0] < new_docs[u][0]:
-    #             i += 1
-    #         else:
-    #             u += 1
-    #     docs = new
-        
-    # ordered = sorted(docs, key= lambda x: ranks[str(x[0])], reverse=True)
-    # return [x[0] for x in ordered]
+def trigramify_query(terms: list[str]) -> list[str]:
+    'Change query to index trigrams index'
+    pass
+
+def positional_matching(list1: list[int], list2: list[int], target) -> set[int]:
+    'Find how many integers in the list1 are a target number difference from list2'
+    i = 0
+    j = 0
+    res = 0
+    while i < len(list1) and j < len(list2):
+        if list2[i] - list1[i] == target:
+            i += 1
+            j += 1
+            res += 1
+        elif list2[i] - list1[i] > target:
+            i += 1
+        else:
+            j += 1    
+    return res
+
+def positional_processing(terms: list[str], iid: dict[str, list[tuple[int]]]) -> int:
+    '''
+    Enumerates valid term pairs and determines if there is a positional difference match 
+    in the inverted index
+    '''
+    pass
