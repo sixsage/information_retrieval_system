@@ -40,7 +40,7 @@ def get_intersection(intersection: list[(int, int)], new_term_postings) -> list[
 def cosine_similarity(list1: list[int], list2: list[int]):
     return numpy.dot(list1, list2) / (numpy.linalg.norm(list1) * numpy.linalg.norm(list2))
 
-def query_processing(q, terms: list[str | tuple], iid: dict[str, list[tuple[int]]], total_pages, headings_iid:dict[str, list[tuple[int]]]) -> list[int]:
+def query_processing(q, terms: list[str | tuple], iid: dict[str, list[tuple[int]]], total_pages, headings_iid:dict[str, list[tuple[int]]], tagged_iid) -> list[int]:
     query_iid = {}
     for token in terms:
         query_iid.update(iid.find_token(token))
