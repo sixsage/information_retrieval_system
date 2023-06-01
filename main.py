@@ -38,7 +38,7 @@ if __name__ == "__main__":
     # MULTIPROCESSING IN PROGRESS
     # make the query_iid in query_processing? passing in the index objects for now
     q = multiprocessing.Queue()
-    processbigrams = multiprocessing.Process(target=search.query_processing, args=(q, search.bigramify_query(user_input), bigrams, TOTAL_PAGES))
+    processbigrams = multiprocessing.Process(target=search.query_processing, args=(q, search.bigramify_query(user_input), bigrams, TOTAL_PAGES, headings_iid))
 
     # processtrigrams = multiprocessing.Process(target=search.query_processing, args=[search.trigramify_query(user_input), trigrams.index, TOTAL_PAGES])
 
