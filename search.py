@@ -46,15 +46,22 @@ def query_processing(q, terms: list[str | tuple], iid: dict[str, list[tuple[int]
         query_iid.update(iid.find_token(token))
     terms = sorted(terms, key=lambda x: len(query_iid[x]))
     intersection = None
+    headings_intersection = None
     doc_scores = defaultdict(list)
     for term in terms:
+        if headings_intersection == None:
+            headings_intersection = [(x[0], x[1]) for x in headings_iid[term]]
         if intersection == None:
             intersection = [(x[0], x[1]) for x in query_iid[term]]
         else:
             new_term_postings = [(x[0], x[1]) for x in query_iid[term]]
             intersection = get_intersection(intersection, new_term_postings)
+            headings_intersection = get_intersection(intersection,headings_intersection)
         for doc_id, frequency in intersection:
-            doc_scores[doc_id].append(1+ math.log(frequency))
+            if (doc_id, frequency) in headings_intersection:
+                doc_scores[doc_id].append((1+ math.log(frequency))*1.3)
+            else:
+                doc_scores[doc_id].append(1+ math.log(frequency))
     
     # calculate the cosine similarity
     query_as_doc = Counter(terms)

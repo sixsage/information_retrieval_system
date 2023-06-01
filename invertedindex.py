@@ -49,6 +49,7 @@ class Index:
     def merge_files(self):
         file_obj = [open(file, encoding="utf-8") for file in self.partial_indexes]
         cur_dicts = [self.str_to_dict(file.readline()) for file in file_obj]
+        #print("merged at :" , self.location)
         out = open(self.location, 'w', encoding="utf-8")
         while len(cur_dicts) != 0:
             cur_min = list(min([dict.keys() for dict in cur_dicts]))[0]
@@ -82,31 +83,35 @@ class Index:
         self.index = defaultdict(list)
 
     def build_index_of_index(self):
-        with open(self.location, encoding="utf-8") as f:
+        with open('final_index1.txt', encoding="utf-8") as f:
             line = f.readline()
             while line: 
                 info = line.split(self.splitter)
-                self.token_loc[info[0]] = f.tell() - len(line) - 1
+                self.token_loc[info[0]] = f.tell() - len(line) 
                 line = f.readline()
 
     def find_token(self, token) -> dict:
+        #print("INDEX: finding token:", token)
         line = ''
-        with open(self.location, encoding="utf-8") as f:
+        with open("final_index1.txt", encoding="utf-8") as f:
+            #print('postion =', self.token_loc[token])
             f.seek(self.token_loc[token])
             line = f.readline()
+        #print('converting:', line)
         return self.str_to_dict(line)
 
 
 class InvertedIndex(Index):
-    def __init__(self) -> None:
+    def __init__(self, loc ="final_index1.txt", partial_loc = "inverted_index" ) -> None:
         super().__init__()
-        self.location = "final_index1.txt"
+        self.location = loc
+        self.partial_location = partial_loc
 
     def add_page(self, stems, page_index) -> None:
         position = 0
         temp_index = defaultdict(list)
         if page_index % self.dump_threshold == 0: 
-            self.dump(f"inverted_index{len(self.partial_indexes)}.txt")
+            self.dump(f"{self.partial_location}{len(self.partial_indexes)}.txt")
             self.index = defaultdict(list)
         for stem in stems:
             position += 1
@@ -123,7 +128,7 @@ class InvertedIndex(Index):
         # maybe we can add try/except in the case of memory overflow - MemoryError in python 
 
     def merge_partials(self):
-        self.dump(f"inverted_index{len(self.partial_indexes)}.txt")
+        self.dump(f"{self.partial_location}{len(self.partial_indexes)}.txt")
         self.index = defaultdict(list)
         self.merge_files()
             
@@ -192,6 +197,7 @@ class BigramIndex(Index):
                 line = f.readline()
 
     def find_token(self, token) -> dict:
+        #print('dinding token:', token)
         line = ''
         with open(self.location, encoding="utf-8") as f:
             f.seek(self.token_loc[token])
@@ -250,15 +256,18 @@ class TrigramIndex(Index):
                 line = f.readline()
 
     def find_token(self, token) -> dict:
+        #print('findind token:', token)
         line = ''
         with open(self.location, encoding="utf-8") as f:
             f.seek(self.token_loc[token])
             line = f.readline()
+        #print(line)
         return self.str_to_dict(line)
 
             
 def build_indexes():
     # initialize all indexes
+    headings_iid = InvertedIndex("final_headings_index.txt", "headings_index")
     iid = InvertedIndex()
     bigram_index = BigramIndex()
     trigram_index = TrigramIndex()
@@ -275,8 +284,12 @@ def build_indexes():
             with open(page.path, "r") as file:
                 data = json.loads(file.read())
                 html_content = data["content"]
-                text = BeautifulSoup(html_content, "lxml").get_text()
+                soup = BeautifulSoup(html_content, "lxml")
+                text = soup.get_text()
                 tokens = tokenizer.tokenize(text)
+                heading_content = str(soup.find_all(["h1"]))
+                heading_text = BeautifulSoup(heading_content, "lxml").get_text()
+                heading_tokens = tokenizer.tokenize(heading_text)
 
                 # dup check goes here
                 hash_value = duplicatecheck.hash(Counter(tokens))
@@ -290,6 +303,8 @@ def build_indexes():
                     urls[page_index] = data["url"]
                     print(page_index)
                     stems = iid.stemmer(tokens)
+                    heading_stems = headings_iid.stemmer(heading_tokens)
+                    headings_iid.add_page(heading_stems,page_index)
                     iid.add_page(stems, page_index)
                     bigram_index.add_page(stems, page_index)
                     trigram_index.add_page(stems, page_index)
@@ -301,6 +316,7 @@ def build_indexes():
         #     break
 
     iid.merge_partials()
+    headings_iid.merge_partials()
     bigram_index.merge_partials()
     trigram_index.merge_partials()
     dumping_urls = json.dumps(urls)
