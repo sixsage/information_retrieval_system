@@ -277,8 +277,8 @@ def build_indexes():
     
     page_index = 0
     urls = {}
-    dup_pages = []
-    tokenizer = RegexpTokenizer(r'\w+')
+    # dup_pages = []
+    tokenizer = RegexpTokenizer(r'[a-zA-Z0-9]+')
     for domain in os.scandir(PATH_TO_PAGES):
         simhash_values = []
         # if domain.name != "www_informatics_uci_edu":
