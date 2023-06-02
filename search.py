@@ -67,7 +67,8 @@ def single_word_process(q, terms, iid, headings_iid, tagged_iid, total_pages):
             freq = posting[1]
             if doc_id not in doc_scores and add_more:
                 doc_scores[doc_id] = [0 for _ in range(len(terms))]
-            doc_scores[doc_id][i] = (1 + math.log(freq))
+            if doc_id in doc_scores:
+                doc_scores[doc_id][i] = (1 + math.log(freq))
 
     query_as_doc = Counter(terms)
     query_score = []

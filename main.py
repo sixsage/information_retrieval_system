@@ -80,6 +80,7 @@ if __name__ == "__main__":
             print(urls[str(doc_id)])
         end_time = datetime.datetime.now()
         duration = (strat_time - end_time).microseconds /1000
+        print(duration)
     # for doc_id in target_doc_ids:
     #     #print(doc_id)
     #     print(urls[str(doc_id)])
