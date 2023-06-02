@@ -248,10 +248,12 @@ class BigramIndex(Index):
             return
         with open(self.location, encoding="utf-8") as f:
             line = f.readline()
+            pos = 0
             while line: 
                 info = line.split(self.splitter)
                 token = tuple(info[0].split())
-                self.token_loc[token] = f.tell() - len(line) - 1
+                self.token_loc[token] = pos
+                pos = f.tell()
                 line = f.readline()
         ioi = json.dumps(self.dict_to_json(self.token_loc))
         with open('bigram_ioi.json', 'w') as bigram_ioi:
@@ -261,12 +263,14 @@ class BigramIndex(Index):
     def find_token(self, token) -> dict:
         #print('dinding token:', token)
         line = ''
+        print("getting:", token)
         with open(self.location, encoding="utf-8") as f:
             if token not in self.token_loc:
                 print("not in index", self.location)
                 return {}
             f.seek(self.token_loc[token])
             line = f.readline()
+        print("got", line)
         return self.str_to_dict(line)
     
 class TrigramIndex(Index):
@@ -321,10 +325,12 @@ class TrigramIndex(Index):
             return
         with open(self.location, encoding="utf-8") as f:
             line = f.readline()
+            pos = 0
             while line: 
                 info = line.split(self.splitter)
                 token = tuple(info[0].split())
-                self.token_loc[token] = f.tell() - len(line) - 1
+                self.token_loc[token] = pos
+                pos = f.tell()
                 line = f.readline()
 
         ioi = json.dumps(self.dict_to_json(self.token_loc))
