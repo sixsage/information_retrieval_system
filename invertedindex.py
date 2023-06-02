@@ -38,6 +38,17 @@ class Index:
     def dict_to_str(self, dict):
         return str(dict)
     
+    def dict_to_json(self, dictionary):
+        return [{'k': k, 'v':v} for k, v in dictionary.items()]
+    
+    def json_to_dict(self, json_result):
+        result = dict()
+        for dictionary in json_result:
+            key = tuple(dictionary['k'])
+            val = dictionary['v']
+            result[key] = val
+        return result
+    
     # after indexing all the pages, we have to merge the created text files
     # open all the files, and read them line by line
     # at the top, get the token that comes first
@@ -191,7 +202,8 @@ class BigramIndex(Index):
         if os.path.exists('bigram_ioi.json'):
             with open('bigram_ioi.json', "r") as f:
                 x = f.read()
-                self.token_loc = json.loads(x)
+                content = json.loads(x)
+            self.token_loc = self.json_to_dict(content)
             return
         with open(self.location, encoding="utf-8") as f:
             line = f.readline()
@@ -200,7 +212,7 @@ class BigramIndex(Index):
                 token = tuple(info[0].split())
                 self.token_loc[token] = f.tell() - len(line) - 1
                 line = f.readline()
-        ioi = json.dumps(self.token_loc)
+        ioi = json.dumps(self.dict_to_json(self.token_loc))
         with open('bigram_ioi.json', 'w') as bigram_ioi:
             bigram_ioi.write(ioi)
 
@@ -254,12 +266,14 @@ class TrigramIndex(Index):
             freq = int(posting[1])
             parsed_postings.append((doc_id, freq))
         return {trigram: parsed_postings}
-    
+
+
     def build_index_of_index(self):
-        if os.path.exists('bigram_ioi.json'):
-            with open('bigram_ioi.json', "r") as f:
+        if os.path.exists('trigram_ioi.json'):
+            with open('trigram_ioi.json', "r") as f:
                 x = f.read()
-                self.token_loc = json.loads(x)
+                content = json.loads(x)
+            self.token_loc = self.json_to_dict(content)
             return
         with open(self.location, encoding="utf-8") as f:
             line = f.readline()
@@ -269,8 +283,8 @@ class TrigramIndex(Index):
                 self.token_loc[token] = f.tell() - len(line) - 1
                 line = f.readline()
 
-        ioi = json.dumps(self.token_loc)
-        with open('bigram_ioi.json', 'w') as bigram_ioi:
+        ioi = json.dumps(self.dict_to_json(self.token_loc))
+        with open('trigram_ioi.json', 'w') as bigram_ioi:
             bigram_ioi.write(ioi)
 
     def find_token(self, token) -> dict:
