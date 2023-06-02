@@ -1,11 +1,10 @@
 import streamlit as st
 
 def getLinks(cap):
-        links = ["https://www.ics.uci.edu", "https://www.ics.uci.edu/ugrad/", "https://career.uci.edu"]
+        links = ["https://www.ics.uci.edu"]*300
         return links[:cap]
 
-
-if __name__ == '__main__':
+def run():
     st.set_page_config(page_title="search")
 
     st.title("Home page")
@@ -18,8 +17,14 @@ if __name__ == '__main__':
     if submit and user_query != "":
         print(user_query)
         st.session_state["user_query"] = user_query
-        links = getLinks(3)
-        st.write("results for ", user_query, ":")
+        links = getLinks(300)
+        time = len(links)
+        st.write("results for ", user_query, ":", "computed in: ", time, "ms")
         for result in links:
             st.write(f'[{result}](%s)' % result)
 
+
+
+
+if __name__ == '__main__':
+    run(220)
