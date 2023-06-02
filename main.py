@@ -26,33 +26,32 @@ if __name__ == "__main__":
     tagged_iid.build_index_of_index()
     bigrams = invertedindex.BigramIndex()
     bigrams.build_index_of_index()
-    #trigrams = invertedindex.TrigramIndex()
-    #trigrams.build_index_of_index()
+    trigrams = invertedindex.TrigramIndex()
+    trigrams.build_index_of_index()
     #iid = load_json("inverted_index.json")
     urls = load_json("urlindex.json")
     stemmer = PorterStemmer()
     user_input = input("SEARCH: ")
     strat_time = datetime.datetime.now()
     user_input = user_input.split()
-    user_input = [stemmer.stem(token) for token in user_input]
-    # print(query_iid)
+    terms = [stemmer.stem(token) for token in user_input]
+    local_iid = {}
+    bigram_iid = {}
+    trigram_iid = {}
+    for token in terms:
+        local_iid.update(iid.find_token(token))
+        bigram_iid.update(bigrams.find_token(token))
+        trigram_iid.update(trigrams.find_token(token))
+    
+    # print(query_iid) 
+    result = search.query_processing(terms, iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
 
-    # MULTIPROCESSING IN PROGRESS
-    # make the query_iid in query_processing? passing in the index objects for now
-    q = multiprocessing.Queue()
-    processbigrams = multiprocessing.Process(target=search.query_processing, args=(q, search.bigramify_query(user_input), bigrams, TOTAL_PAGES, headings_iid, tagged_iid))
-
-    # processtrigrams = multiprocessing.Process(target=search.query_processing, args=[search.trigramify_query(user_input), trigrams.index, TOTAL_PAGES])
-
-    # processpositional = multiprocessing.Process(target=search.query_processing, args=[search.trigramify_query(user_input), trigrams, TOTAL_PAGES])
-
-    processbigrams.start()
+    
     print("Top 10 urls: ")
-    for doc_id in q.get()[:10]:
+    for doc_id in result[:10]:
         print(urls[str(doc_id)])
     end_time = datetime.datetime.now()
     duration = (strat_time - end_time).microseconds /1000
-    processbigrams.join()
     # for doc_id in target_doc_ids:
     #     #print(doc_id)
     #     print(urls[str(doc_id)])

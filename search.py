@@ -3,6 +3,7 @@ import math
 import bisect
 import numpy, numpy.linalg
 import multiprocessing
+import nltk
 
 TOTAL_PAGES = 0
 
@@ -43,7 +44,7 @@ def get_intersection(intersection: list[(int, int)], new_term_postings) -> list[
 def cosine_similarity(list1: list[int], list2: list[int]):
     return numpy.dot(list1, list2) / (numpy.linalg.norm(list1) * numpy.linalg.norm(list2))
 
-def single_word_process(terms, iid, headings_iid, tagged_iid, total_pages):
+def single_word_process(q, terms, iid, headings_iid, tagged_iid, total_pages):
     # assume i am getting the postings as input
     # all of them are dictionaries
     MIN_DOCS = 40
@@ -76,73 +77,48 @@ def single_word_process(terms, iid, headings_iid, tagged_iid, total_pages):
     for doc_id in doc_scores:
         final_score_dict[doc_id] = cosine_similarity(doc_scores[doc_id], query_score) * (multiplier[doc_id] if doc_id in multiplier else 1)
 
-    return positional_processing(terms, final_score_dict, iid)
+    q.put(positional_processing(terms, final_score_dict, iid))
 
 
-def query_processing(q, terms: list[str | tuple], iid: dict[str, list[tuple[int]]], total_pages, headings_iid:dict[str, list[tuple[int]]], tagged_iid) -> list[int]:
-    query_iid = {}
-    headings = {}
-    tagged = {}
-    for token in terms:
-        query_iid.update(iid.find_token(token))
-        headings.update(headings_iid.find_token(token))
-        tagged.update(tagged_iid.find_token(token))
-    terms = sorted(terms, key=lambda x: len(query_iid[x]))
+def query_processing(query, iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, total_pages) -> list[int]:
+    single_queue = multiprocessing.Queue()
+    bigrams_queue = multiprocessing.Queue()
+    trigrams_queue = multiprocessing.Queue()
+    single = multiprocessing.Process(target=single_word_process, args=(single_queue, query, iid, headings_iid, tagged_iid, total_pages))
+    bigrams = multiprocessing.Process(target=ngrams_processing, args=(bigrams_queue, nltk.bigrams(query), bigram_iid))
+    trigrams = multiprocessing.Process(target=ngrams_processing, args=(trigrams_queue, nltk.trigrams(query), trigram_iid))
+    single.start()
+    bigrams.start()
+    trigrams.start()
+    candidates = single_queue.get()
+    bigram_scores = bigrams_queue.get()
+    trigram_scores = trigrams_queue.get()
+    for k in candidates:
+        candidates[k] *= bigram_scores[k] if k in bigram_scores else 1
+        candidates[k] *= trigram_scores[k] if k in trigram_scores else 1
+    single.join()
+    bigrams.join()
+    trigrams.join()
+    return [docid for docid in sorted(candidates, key=lambda x: candidates[x], reverse=True)]
+
+
+
+
+
+def ngrams_processing(q: multiprocessing.Queue, terms, special_iid) -> dict[int, int]:
+    terms = sorted(terms, key=lambda x: len(special_iid[x]))
+    doc_scores = {}
     intersection = None
-    headings_intersection = None
-    tagged_intersection = None
-    doc_scores = defaultdict(list)
     for term in terms:
-        if headings_intersection == None:
-            headings_intersection = [(x[0], x[1]) for x in headings[term]]
-        if tagged_intersection == None:
-            tagged_intersection = [(x[0], x[1]) for x in tagged[term]]
         if intersection == None:
-            intersection = [(x[0], x[1]) for x in query_iid[term]]
+            intersection = [(x[0], x[1]) for x in special_iid[term]]
         else:
-            new_term_postings = [(x[0], x[1]) for x in query_iid[term]]
+            new_term_postings = [(x[0], x[1]) for x in special_iid[term]]
             intersection = get_intersection(intersection, new_term_postings)
-            headings_intersection = get_intersection(intersection,headings_intersection)
-            tagged_intersection = get_intersection(intersection, tagged_intersection)
+    if intersection:
         for doc_id, frequency in intersection:
-            if (doc_id, frequency) in headings_intersection:
-                doc_scores[doc_id].append((1+ math.log(frequency))*1.3)
-            elif (doc_id,frequency) in tagged_intersection:
-                doc_scores[doc_id].append((1+ math.log(frequency))*1.1)
-            else:
-                doc_scores[doc_id].append(1+ math.log(frequency))
-    
-#     # calculate the cosine similarity
-#     query_as_doc = Counter(terms)
-#     query_score = []
-#     for term in terms:
-#         print(term)
-#         query_score.append(tf_idf(term, -1, query_iid, total_pages, term_frequency=query_as_doc[term]))
-#     pages_with_all_terms = [doc_id for doc_id in doc_scores if len(doc_scores[doc_id]) == len(query_score)]
-#     ranking = sorted(pages_with_all_terms, 
-#                      key= lambda doc_id: cosine_similarity(doc_scores[doc_id], query_score), reverse=True)
-#     print(ranking)
-#     q.put(ranking)
-
-
-
-
-def ngrams_processing(q: multiprocessing.Queue, terms, ngrams_iid) -> dict[int, int]:
-    local_iid = {}
-    for token in terms:
-        local_iid.update(ngrams_iid.find_token(token))
-    terms = sorted(terms, key=lambda x: len(local_iid[x]))
-    doc_scores = defaultdict(list)
-    intersection = None
-    for term in terms:
-        if intersection == None:
-            intersection = [(x[0], x[1]) for x in local_iid[term]]
-        else:
-            new_term_postings = [(x[0], x[1]) for x in local_iid[term]]
-            intersection = get_intersection(intersection, new_term_postings)
-    for doc_id, frequency in intersection:
-        doc_scores[doc_id] = frequency * .05 + 1
-    return doc_scores
+            doc_scores[doc_id] = frequency * .05 + 1
+    q.put(doc_scores)
 
 def positional_processing(query, cand_docids: dict, local_iid):
     terms: list[(str, str, int)] = posify(query)
@@ -164,7 +140,21 @@ def positional_processing(query, cand_docids: dict, local_iid):
     return cand_docids
         
 def posify(query):
-    pass
+    stopwords = {"be", "can", "to"}
+    if len(query) > 3:
+        return []
+    res = []
+    i = 0
+    while i < len(query):
+        j = i + 3
+        while j < len(query):
+            if query[i] in stopwords:
+                break
+            elif query[j] not in stopwords:
+                res.append((query[i],query[j],j-i))
+            j += 1
+        i += 1
+    return res
 
 
 
