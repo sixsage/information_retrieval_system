@@ -94,11 +94,11 @@ class Index:
         self.index = defaultdict(list)
 
     def build_index_of_index(self):
-        with open('final_index1.txt', encoding="utf-8") as f:
+        with open(self.location, encoding="utf-8") as f:
             line = f.readline()
             while line: 
                 info = line.split(self.splitter)
-                self.token_loc[info[0]] = f.tell() - len(line) 
+                self.token_loc[info[0]] = f.tell() - len(line) - 1
                 line = f.readline()
 
     def find_token(self, token) -> dict:

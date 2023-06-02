@@ -19,13 +19,13 @@ if __name__ == "__main__":
 
     if not (os.path.exists("final_index1.txt") and os.path.exists("urlindex.json")):
         invertedindex.build_indexes()
-    headings_iid = invertedindex.InvertedIndex("final_headings_index.txt", "headings_index")
+    headings = invertedindex.InvertedIndex("final_headings_index.txt", "headings_index")
     if os.path.exists("headings_ioi.json"):
         x = load_json("headings_ioi.json")
-        headings_iid.token_loc = x
+        headings.token_loc = x
     else:
-        headings_iid.build_index_of_index()
-        dumping_ioi = json.dumps(headings_iid.token_loc)
+        headings.build_index_of_index()
+        dumping_ioi = json.dumps(headings.token_loc)
         with open("headings_ioi.json", "w") as f:
             f.write(dumping_ioi)
     iid = invertedindex.InvertedIndex()
@@ -37,13 +37,13 @@ if __name__ == "__main__":
         dumping_ioi = json.dumps(iid.token_loc)
         with open("iid_ioi.json", "w") as f:
             f.write(dumping_ioi)
-    tagged_iid = invertedindex.InvertedIndex("final_tagged_index.txt", "tagged_index")
+    tagged = invertedindex.InvertedIndex("final_tagged_index.txt", "tagged_index")
     if os.path.exists("tagged_ioi.json"):
         x = load_json("tagged_ioi.json")
-        tagged_iid.token_loc = x
+        tagged.token_loc = x
     else:
-        tagged_iid.build_index_of_index()
-        dumping_ioi = json.dumps(tagged_iid.token_loc)
+        tagged.build_index_of_index()
+        dumping_ioi = json.dumps(tagged.token_loc)
         with open("tagged_ioi.json", "w") as f:
             f.write(dumping_ioi)
     bigrams = invertedindex.BigramIndex()
@@ -61,13 +61,16 @@ if __name__ == "__main__":
         local_iid = {}
         bigram_iid = {}
         trigram_iid = {}
+        headings_iid = {}
+        tagged_iid = {}
         for token in terms:
             local_iid.update(iid.find_token(token))
+            headings_iid.update(headings.find_token(token))
+            tagged_iid.update(tagged.find_token(token))
         for token in nltk.bigrams(terms):
             bigram_iid.update(bigrams.find_token(token))
-        for toke in nltk.trigrams(terms):
+        for token in nltk.trigrams(terms):
             trigram_iid.update(trigrams.find_token(token))
-        
         # print(query_iid) 
         result = search.query_processing(terms, local_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
 
