@@ -6,6 +6,7 @@ import json
 import multiprocessing
 import datetime
 import nltk
+import time
 
 TOTAL_PAGES = 41522
 
@@ -72,8 +73,10 @@ if __name__ == "__main__":
         for token in nltk.trigrams(terms):
             trigram_iid.update(trigrams.find_token(token))
         # print(query_iid) 
+        start = time.time_ns()
         result = search.query_processing(terms, local_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
-
+        time_sec = time.time_ns()
+        print((time_sec-start)/1000000)
         
         print("Top 10 urls: ")
         for doc_id in result[:10]:

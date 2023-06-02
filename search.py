@@ -4,12 +4,13 @@ import bisect
 import numpy, numpy.linalg
 import multiprocessing
 import nltk
-
+import time
 TOTAL_PAGES = 0
 
 def tf_idf(term: str, doc_id: int, iid: defaultdict[str, list[(int, int)]], total_pages: int, term_frequency=None):
+    if term not in iid:
+        return 0
     postings = iid[term]
-
     if not term_frequency:
         position = bisect.bisect_left(postings, [doc_id])
         term_frequency = -1
@@ -47,8 +48,9 @@ def cosine_similarity(list1: list[int], list2: list[int]):
 def single_word_process(q, terms, iid, headings_iid, tagged_iid, total_pages):
     # assume i am getting the postings as input
     # all of them are dictionaries
-    MIN_DOCS = 40
-    terms.sort(key=lambda x: len(iid[x]))
+    MIN_DOCS = 30
+
+    terms.sort(key=lambda x: len(iid[x]) if x in iid else math.inf)
     doc_scores = dict()
     multiplier = dict()
     for term in tagged_iid:
@@ -61,7 +63,9 @@ def single_word_process(q, terms, iid, headings_iid, tagged_iid, total_pages):
             multiplier[doc_id] = 1.3
 
     for i in range(len(terms)):
-        add_more = len(doc_scores) < 40
+        add_more = len(doc_scores) < MIN_DOCS
+        if terms[i] not in iid:
+            continue
         for posting in iid[terms[i]]:
             doc_id = posting[0]
             freq = posting[1]
@@ -88,6 +92,21 @@ def query_processing(query, iid, bigram_iid, trigram_iid, headings_iid, tagged_i
     single = multiprocessing.Process(target=single_word_process, args=(single_queue, query, iid, headings_iid, tagged_iid, total_pages))
     bigrams = multiprocessing.Process(target=ngrams_processing, args=(bigrams_queue, list(nltk.bigrams(query)), bigram_iid))
     trigrams = multiprocessing.Process(target=ngrams_processing, args=(trigrams_queue, list(nltk.trigrams(query)), trigram_iid))
+    # start = time.time_ns()
+    # single.start()
+    # candidates = single_queue.get()
+    # time_sec = time.time_ns()
+    # print("single",(time_sec-start)/1000000)
+    # start = time.time_ns()
+    # bigrams.start()
+    # bigram_scores = bigrams_queue.get()
+    # time_sec = time.time_ns()
+    # print("bi",(time_sec-start)/1000000)
+    # start = time.time_ns()
+    # trigrams.start()
+    # trigram_scores = trigrams_queue.get()
+    # time_sec = time.time_ns()
+    # print("tri",(time_sec-start)/1000000)
     single.start()
     bigrams.start()
     trigrams.start()
@@ -107,10 +126,12 @@ def query_processing(query, iid, bigram_iid, trigram_iid, headings_iid, tagged_i
 
 
 def ngrams_processing(q: multiprocessing.Queue, terms, special_iid) -> dict[int, int]:
-    terms = sorted(terms, key=lambda x: len(special_iid[x]))
+    terms = sorted(terms, key=lambda x: len(special_iid[x]) if x in special_iid else math.inf)
     doc_scores = {}
     intersection = None
     for term in terms:
+        if term not in special_iid:
+            continue
         if intersection == None:
             intersection = [(x[0], x[1]) for x in special_iid[term]]
         else:
@@ -124,6 +145,8 @@ def ngrams_processing(q: multiprocessing.Queue, terms, special_iid) -> dict[int,
 def positional_processing(query, cand_docids: dict, local_iid):
     terms: list[(str, str, int)] = posify(query)
     for term in terms:
+        if term[0] not in local_iid or term[1] not in local_iid:
+            continue
         first_posting = local_iid[term[0]]
         second_posting = local_iid[term[1]]
         i = 0
@@ -141,8 +164,8 @@ def positional_processing(query, cand_docids: dict, local_iid):
     return cand_docids
         
 def posify(query):
-    stopwords = {"be", "can", "to"}
-    if len(query) > 3:
+    stopwords = set()
+    if len(query) <= 3:
         return []
     res = []
     i = 0
@@ -164,12 +187,13 @@ def positional_matching(list1: list[int], list2: list[int], target) -> set[int]:
     i = 2
     j = 2
     res = 0
-    while i < len(list1) and j < len(list2):
-        if list2[i] - list1[i] == target:
+    print(list1, list2)
+    while i < len(list2) and j < len(list1):
+        if list2[i] - list1[j] == target:
             i += 1
             j += 1
             res += 1
-        elif list2[i] - list1[i] > target:
+        elif list2[i] - list1[j] < target:
             i += 1
         else:
             j += 1    

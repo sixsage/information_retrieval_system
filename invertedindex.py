@@ -108,6 +108,9 @@ class Index:
         line = ''
         with open(self.location, encoding="utf-8") as f:
             #print('postion =', self.token_loc[token])
+            if token not in self.token_loc:
+                print("not in index", self.location)
+                return {}
             f.seek(self.token_loc[token])
             line = f.readline()
         #print('converting:', line)
@@ -223,6 +226,9 @@ class BigramIndex(Index):
         #print('dinding token:', token)
         line = ''
         with open(self.location, encoding="utf-8") as f:
+            if token not in self.token_loc:
+                print("not in index", self.location)
+                return {}
             f.seek(self.token_loc[token])
             line = f.readline()
         return self.str_to_dict(line)
@@ -293,6 +299,9 @@ class TrigramIndex(Index):
         #print('findind token:', token)
         line = ''
         with open(self.location, encoding="utf-8") as f:
+            if token not in self.token_loc:
+                print("not in index", self.location)
+                return {}
             f.seek(self.token_loc[token])
             line = f.readline()
         #print(line)
