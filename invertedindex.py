@@ -188,6 +188,11 @@ class BigramIndex(Index):
         return {bigram: parsed_postings}
     
     def build_index_of_index(self):
+        if os.path.exists('bigram_ioi.json'):
+            with open('bigram_ioi.json', "r") as f:
+                x = f.read()
+                self.token_loc = json.loads(x)
+            return
         with open(self.location, encoding="utf-8") as f:
             line = f.readline()
             while line: 
@@ -195,6 +200,10 @@ class BigramIndex(Index):
                 token = tuple(info[0].split())
                 self.token_loc[token] = f.tell() - len(line) - 1
                 line = f.readline()
+        ioi = json.dumps(self.token_loc)
+        with open('bigram_ioi.json', 'w') as bigram_ioi:
+            bigram_ioi.write(ioi)
+
 
     def find_token(self, token) -> dict:
         #print('dinding token:', token)
@@ -247,6 +256,11 @@ class TrigramIndex(Index):
         return {trigram: parsed_postings}
     
     def build_index_of_index(self):
+        if os.path.exists('bigram_ioi.json'):
+            with open('bigram_ioi.json', "r") as f:
+                x = f.read()
+                self.token_loc = json.loads(x)
+            return
         with open(self.location, encoding="utf-8") as f:
             line = f.readline()
             while line: 
@@ -254,6 +268,10 @@ class TrigramIndex(Index):
                 token = tuple(info[0].split())
                 self.token_loc[token] = f.tell() - len(line) - 1
                 line = f.readline()
+
+        ioi = json.dumps(self.token_loc)
+        with open('bigram_ioi.json', 'w') as bigram_ioi:
+            bigram_ioi.write(ioi)
 
     def find_token(self, token) -> dict:
         #print('findind token:', token)
