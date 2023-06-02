@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     if not (os.path.exists("final_index1.txt") and os.path.exists("urlindex.json")):
         invertedindex.build_indexes()
-    headings_iid = invertedindex.InvertedIndex("final_headings_index", "headings_index")
+    headings_iid = invertedindex.InvertedIndex("final_headings_index.txt", "headings_index")
     headings_iid.build_index_of_index()
     iid = invertedindex.InvertedIndex()
     iid.build_index_of_index()
