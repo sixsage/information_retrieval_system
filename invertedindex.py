@@ -184,6 +184,16 @@ class InvertedIndex(Index):
                 position = f.tell()
                 line = f.readline()
 
+    def find_token_champion(self, token) -> dict:
+        #print("INDEX: finding token:", token)
+        line = ''
+        with open("champion_index.txt", encoding="utf-8") as f:
+            #print('postion =', self.token_loc[token])
+            f.seek(self.champion_loc[token])
+            line = f.readline()
+        #print('converting:', line)
+        return self.str_to_dict(line)
+
 class BigramIndex(Index):
 
     def __init__(self):

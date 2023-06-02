@@ -29,7 +29,8 @@ if __name__ == "__main__":
         with open("headings_ioi.json", "w") as f:
             f.write(dumping_ioi)
     iid = invertedindex.InvertedIndex()
-    iid.create_champion_list()
+    if not os.path.exists("champion_index.txt"):
+        iid.create_champion_list()
     iid.build_champion_index_of_index()
     if os.path.exists("iid_ioi.json"):
         x = load_json("iid_ioi.json")
@@ -55,33 +56,39 @@ if __name__ == "__main__":
     #iid = load_json("inverted_index.json")
     urls = load_json("urlindex.json")
     stemmer = PorterStemmer()
+    local_iid = {}
+    bigram_iid = {}
+    trigram_iid = {}
+    headings_iid = {}
+    tagged_iid = {}
+    champion_iid = {}
     while True:
         user_input = input("SEARCH: ")
         strat_time = datetime.datetime.now()
+        s_time = time.time()
         user_input = user_input.split()
         terms = [stemmer.stem(token) for token in user_input]
-        local_iid = {}
-        bigram_iid = {}
-        trigram_iid = {}
-        headings_iid = {}
-        tagged_iid = {}
         for token in terms:
             local_iid.update(iid.find_token(token))
             headings_iid.update(headings.find_token(token))
             tagged_iid.update(tagged.find_token(token))
+            champion_iid.update(iid.find_token_champion(token))
         for token in nltk.bigrams(terms):
             bigram_iid.update(bigrams.find_token(token))
         for token in nltk.trigrams(terms):
             trigram_iid.update(trigrams.find_token(token))
         # print(query_iid) 
-        result = search.query_processing(terms, local_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
+        result = search.query_processing(terms, local_iid, champion_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
 
         print("Top 10 urls: ")
         end_time = datetime.datetime.now()
+        e_time = time.time()
         for doc_id in result[:10]:
             print(urls[str(doc_id)])
         duration = (strat_time - end_time).microseconds /1000
+        duration_time = (e_time - s_time) * 1000
         print(duration)
+        print(duration_time)
     # for doc_id in target_doc_ids:
     #     #print(doc_id)
     #     print(urls[str(doc_id)])
