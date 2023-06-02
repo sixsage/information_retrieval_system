@@ -105,16 +105,13 @@ def query_processing(query, iid, champion_iid, bigram_iid, trigram_iid, headings
     # bigram_scores = bigrams_queue.get()
     # trigram_scores = trigrams_queue.get()
     candidates = single_word_process(query, iid, champion_iid, headings_iid, tagged_iid, total_pages)
-    bigram_scores = ngrams_processing(list(nltk.bigrams(query)), bigram_iid)
-    trigram_scores = ngrams_processing(list(nltk.trigrams(query)), trigram_iid)
+    bigram_multiplied = ngrams_processing(list(nltk.bigrams(query)), candidates, bigram_iid)
+    trigram_multiplied = ngrams_processing(list(nltk.trigrams(query)), bigram_multiplied, trigram_iid)
     print('after all functions runs', time.time() - start_time)
-    for k in candidates:
-        candidates[k] *= bigram_scores[k] if k in bigram_scores else 1
-        candidates[k] *= trigram_scores[k] if k in trigram_scores else 1
     # single.join()
     # bigrams.join()
     # trigrams.join()
-    result = [docid for docid in sorted(candidates, key=lambda x: candidates[x], reverse=True)]
+    result = [docid for docid in sorted(trigram_multiplied, key=lambda x: trigram_multiplied[x], reverse=True)]
     print('after everything and sorting', time.time() - start_time)
     return result
 
@@ -123,25 +120,23 @@ def query_processing(query, iid, champion_iid, bigram_iid, trigram_iid, headings
 
 
 # def ngrams_processing(q: multiprocessing.Queue, terms, special_iid) -> dict[int, int]:
-def ngrams_processing(terms, special_iid) -> dict[int, int]:
+def ngrams_processing(terms, candidates, special_iid) -> dict[int, int]:
     start_time = time.time()
-    terms = sorted(terms, key=lambda x: len(special_iid[x]))
-    doc_scores = {}
-    intersection = None
+    doc_scores = defaultdict(int)
     for term in terms:
         if term not in special_iid:
             continue
-        if intersection == None:
-            intersection = [(x[0], x[1]) for x in special_iid[term]]
-        else:
-            new_term_postings = [(x[0], x[1]) for x in special_iid[term]]
-            intersection = get_intersection(intersection, new_term_postings)
-    if intersection:
-        for doc_id, frequency in intersection:
-            doc_scores[doc_id] = frequency * .05 + 1
-    print('ngrams takes:', time.time() - start_time)
+        docs = [(x[0], x[1]) for x in special_iid[term] if x[0] in candidates]
+        for doc in docs:
+            doc_scores[doc[0]] += doc[1]
+    for doc_id in doc_scores:
+        doc_scores[doc_id] = doc_scores[doc_id] * .02 + 1
+        
     # q.put(doc_scores)
-    return doc_scores
+    for doc_id in candidates:
+        candidates[doc_id] *= doc_scores[doc_id]
+    print('ngrams takes:', time.time() - start_time)
+    return candidates
 
 def positional_processing(query, cand_docids: dict, local_iid):
     start_time = time.time()

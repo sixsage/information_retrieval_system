@@ -192,6 +192,8 @@ class InvertedIndex(Index):
         line = ''
         with open("champion_index.txt", encoding="utf-8") as f:
             #print('postion =', self.token_loc[token])
+            if token not in self.champion_loc:
+                return {}
             f.seek(self.champion_loc[token])
             line = f.readline()
         #print('converting:', line)
@@ -270,7 +272,7 @@ class BigramIndex(Index):
                 return {}
             f.seek(self.token_loc[token])
             line = f.readline()
-        print("got", line)
+        # print("got", line)
         return self.str_to_dict(line)
     
 class TrigramIndex(Index):
