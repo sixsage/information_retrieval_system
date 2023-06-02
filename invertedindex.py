@@ -93,7 +93,7 @@ class Index:
     def find_token(self, token) -> dict:
         #print("INDEX: finding token:", token)
         line = ''
-        with open("final_index1.txt", encoding="utf-8") as f:
+        with open(self.location, encoding="utf-8") as f:
             #print('postion =', self.token_loc[token])
             f.seek(self.token_loc[token])
             line = f.readline()
