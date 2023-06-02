@@ -5,12 +5,12 @@ import numpy, numpy.linalg
 import multiprocessing
 import nltk
 import time
-
 TOTAL_PAGES = 0
 
 def tf_idf(term: str, doc_id: int, iid: defaultdict[str, list[(int, int)]], total_pages: int, term_frequency=None):
+    if term not in iid:
+        return 0
     postings = iid[term]
-
     if not term_frequency:
         position = bisect.bisect_left(postings, [doc_id])
         term_frequency = -1
@@ -51,7 +51,7 @@ def single_word_process(q, terms, iid, champion_iid, headings_iid, tagged_iid, t
     MIN_DOCS = 40
     start_time = time.time()
     unsorted_terms = terms
-    terms = sorted(terms, key=lambda x: len(iid[x]))
+    terms = sorted(terms, key=lambda x: len(iid[x]) if x in iid else math.inf)
     doc_scores = dict()
     multiplier = dict()
     for term in tagged_iid:
@@ -63,8 +63,10 @@ def single_word_process(q, terms, iid, champion_iid, headings_iid, tagged_iid, t
             doc_id = posting[0]
             multiplier[doc_id] = 1.3
     for i in range(len(terms)):
-        add_more = len(doc_scores) < 40
-        for posting in champion_iid[terms[i]]:
+        add_more = len(doc_scores) < MIN_DOCS
+        if terms[i] not in iid:
+            continue
+        for posting in iid[terms[i]]:
             doc_id = posting[0]
             freq = posting[1]
             if doc_id not in doc_scores and add_more:
@@ -121,6 +123,8 @@ def ngrams_processing(q: multiprocessing.Queue, terms, special_iid) -> dict[int,
     doc_scores = {}
     intersection = None
     for term in terms:
+        if term not in special_iid:
+            continue
         if intersection == None:
             intersection = [(x[0], x[1]) for x in special_iid[term]]
         else:
@@ -136,6 +140,8 @@ def positional_processing(query, cand_docids: dict, local_iid):
     start_time = time.time()
     terms: list[(str, str, int)] = posify(query)
     for term in terms:
+        if term[0] not in local_iid or term[1] not in local_iid:
+            continue
         first_posting = local_iid[term[0]]
         second_posting = local_iid[term[1]]
         i = 0
@@ -177,12 +183,13 @@ def positional_matching(list1: list[int], list2: list[int], target) -> set[int]:
     i = 2
     j = 2
     res = 0
-    while i < len(list1) and j < len(list2):
-        if list2[i] - list1[i] == target:
+    print(list1, list2)
+    while i < len(list2) and j < len(list1):
+        if list2[i] - list1[j] == target:
             i += 1
             j += 1
             res += 1
-        elif list2[i] - list1[i] > target:
+        elif list2[i] - list1[j] < target:
             i += 1
         else:
             j += 1    

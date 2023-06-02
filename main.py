@@ -6,6 +6,7 @@ import json
 import multiprocessing
 import datetime, time
 import nltk
+import time
 
 TOTAL_PAGES = 41522
 
