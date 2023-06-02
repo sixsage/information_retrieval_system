@@ -29,6 +29,8 @@ if __name__ == "__main__":
         with open("headings_ioi.json", "w") as f:
             f.write(dumping_ioi)
     iid = invertedindex.InvertedIndex()
+    iid.create_champion_list()
+    iid.build_champion_index_of_index()
     if os.path.exists("iid_ioi.json"):
         x = load_json("iid_ioi.json")
         iid.token_loc = x
