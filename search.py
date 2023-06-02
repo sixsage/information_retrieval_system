@@ -4,6 +4,7 @@ import bisect
 import numpy, numpy.linalg
 import multiprocessing
 import nltk
+import time
 
 TOTAL_PAGES = 0
 
@@ -48,6 +49,7 @@ def single_word_process(q, terms, iid, champion_iid, headings_iid, tagged_iid, t
     # assume i am getting the postings as input
     # all of them are dictionaries
     MIN_DOCS = 40
+    start_time = time.time()
     unsorted_terms = terms
     terms = sorted(terms, key=lambda x: len(iid[x]))
     doc_scores = dict()
@@ -69,6 +71,7 @@ def single_word_process(q, terms, iid, champion_iid, headings_iid, tagged_iid, t
                 doc_scores[doc_id] = [0 for _ in range(len(terms))]
             if doc_id in doc_scores:
                 doc_scores[doc_id][i] = (1 + math.log(freq))
+    print('time after getting tf at position', time.time() - start_time)
     query_as_doc = Counter(terms)
     query_score = []
     for term in terms:
@@ -76,36 +79,44 @@ def single_word_process(q, terms, iid, champion_iid, headings_iid, tagged_iid, t
     final_score_dict = dict()
     for doc_id in doc_scores:
         final_score_dict[doc_id] = cosine_similarity(doc_scores[doc_id], query_score) * (multiplier[doc_id] if doc_id in multiplier else 1)
+    print('time after getting score:', time.time() - start_time)
 
     q.put(positional_processing(unsorted_terms, final_score_dict, iid))
 
 
 def query_processing(query, iid, champion_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, total_pages) -> list[int]:
+    start_time = time.time()
     single_queue = multiprocessing.Queue()
     bigrams_queue = multiprocessing.Queue()
     trigrams_queue = multiprocessing.Queue()
     single = multiprocessing.Process(target=single_word_process, args=(single_queue, query, iid, champion_iid, headings_iid, tagged_iid, total_pages))
     bigrams = multiprocessing.Process(target=ngrams_processing, args=(bigrams_queue, list(nltk.bigrams(query)), bigram_iid))
     trigrams = multiprocessing.Process(target=ngrams_processing, args=(trigrams_queue, list(nltk.trigrams(query)), trigram_iid))
+    print(' starting the functions', time.time() - start_time)
     single.start()
     bigrams.start()
     trigrams.start()
+    print('after starting the functions', time.time() - start_time)
     candidates = single_queue.get()
     bigram_scores = bigrams_queue.get()
     trigram_scores = trigrams_queue.get()
+    print('after all functions runs', time.time() - start_time)
     for k in candidates:
         candidates[k] *= bigram_scores[k] if k in bigram_scores else 1
         candidates[k] *= trigram_scores[k] if k in trigram_scores else 1
     single.join()
     bigrams.join()
     trigrams.join()
-    return [docid for docid in sorted(candidates, key=lambda x: candidates[x], reverse=True)]
+    result = [docid for docid in sorted(candidates, key=lambda x: candidates[x], reverse=True)]
+    print('after everything and sorting', time.time() - start_time)
+    return result
 
 
 
 
 
 def ngrams_processing(q: multiprocessing.Queue, terms, special_iid) -> dict[int, int]:
+    start_time = time.time()
     terms = sorted(terms, key=lambda x: len(special_iid[x]))
     doc_scores = {}
     intersection = None
@@ -118,9 +129,11 @@ def ngrams_processing(q: multiprocessing.Queue, terms, special_iid) -> dict[int,
     if intersection:
         for doc_id, frequency in intersection:
             doc_scores[doc_id] = frequency * .05 + 1
+    print('ngrams takes:', time.time() - start_time)
     q.put(doc_scores)
 
 def positional_processing(query, cand_docids: dict, local_iid):
+    start_time = time.time()
     terms: list[(str, str, int)] = posify(query)
     for term in terms:
         first_posting = local_iid[term[0]]
@@ -137,6 +150,7 @@ def positional_processing(query, cand_docids: dict, local_iid):
                 i += 1
             else:
                 j += 1
+    print('positional processing takes:', time.time() - start_time)
     return cand_docids
         
 def posify(query):

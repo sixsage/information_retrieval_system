@@ -31,6 +31,14 @@ if __name__ == "__main__":
     iid = invertedindex.InvertedIndex()
     if not os.path.exists("champion_index.txt"):
         iid.create_champion_list()
+    if os.path.exists("champ_ioi.json"):
+        x = load_json("champ_ioi.json")
+        iid.token_loc = x
+    else:
+        iid.build_champion_index_of_index()
+        dumping_ioi = json.dumps(iid.champion_loc)
+        with open("champ_ioi.json", "w") as f:
+            f.write(dumping_ioi)
     iid.build_champion_index_of_index()
     if os.path.exists("iid_ioi.json"):
         x = load_json("iid_ioi.json")
@@ -64,7 +72,6 @@ if __name__ == "__main__":
     champion_iid = {}
     while True:
         user_input = input("SEARCH: ")
-        strat_time = datetime.datetime.now()
         s_time = time.time()
         user_input = user_input.split()
         terms = [stemmer.stem(token) for token in user_input]
@@ -78,16 +85,13 @@ if __name__ == "__main__":
         for token in nltk.trigrams(terms):
             trigram_iid.update(trigrams.find_token(token))
         # print(query_iid) 
+        print('after all updates:', time.time() - s_time)
         result = search.query_processing(terms, local_iid, champion_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
-
-        print("Top 10 urls: ")
-        end_time = datetime.datetime.now()
         e_time = time.time()
+        print("Top 10 urls: ")
         for doc_id in result[:10]:
             print(urls[str(doc_id)])
-        duration = (strat_time - end_time).microseconds /1000
         duration_time = (e_time - s_time) * 1000
-        print(duration)
         print(duration_time)
     # for doc_id in target_doc_ids:
     #     #print(doc_id)
