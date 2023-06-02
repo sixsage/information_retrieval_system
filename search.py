@@ -155,11 +155,11 @@ def positional_processing(query, cand_docids: dict, local_iid):
         j = 0
         while i < len(first_posting) and j < len(second_posting):
             if first_posting[i][0] == second_posting[j][0] and first_posting[i][0] in cand_docids:
-                freq = positional_matching(first_posting[i], second_posting[i], term[2])
+                freq = positional_matching(first_posting[i], second_posting[j], term[2])
                 cand_docids[first_posting[i][0]] *= freq * .05 + 1
                 i += 1
                 j += 1
-            elif first_posting[i][0] < second_posting[i][0]:
+            elif first_posting[i][0] < second_posting[j][0]:
                 i += 1
             else:
                 j += 1
@@ -190,7 +190,7 @@ def positional_matching(list1: list[int], list2: list[int], target) -> set[int]:
     i = 2
     j = 2
     res = 0
-    print(list1, list2)
+    # print(list1, list2)
     while i < len(list2) and j < len(list1):
         if list2[i] - list1[j] == target:
             i += 1
