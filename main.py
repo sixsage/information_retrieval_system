@@ -21,7 +21,8 @@ if __name__ == "__main__":
         invertedindex.build_indexes()
     headings_iid = invertedindex.InvertedIndex("final_headings_index.txt", "headings_index")
     if os.path.exists("headings_ioi.json"):
-        load_json("headings_ioi.json")
+        x = load_json("headings_ioi.json")
+        headings_iid.token_loc = x
     else:
         headings_iid.build_index_of_index()
         dumping_ioi = json.dumps(headings_iid.token_loc)
@@ -29,7 +30,8 @@ if __name__ == "__main__":
             f.write(dumping_ioi)
     iid = invertedindex.InvertedIndex()
     if os.path.exists("iid_ioi.json"):
-        load_json("iid_ioi.json")
+        x = load_json("iid_ioi.json")
+        iid.token_loc = x
     else:
         iid.build_index_of_index()
         dumping_ioi = json.dumps(iid.token_loc)
@@ -37,7 +39,8 @@ if __name__ == "__main__":
             f.write(dumping_ioi)
     tagged_iid = invertedindex.InvertedIndex("final_tagged_index.txt", "tagged_index")
     if os.path.exists("tagged_ioi.json"):
-        load_json("tagged_ioi.json")
+        x = load_json("tagged_ioi.json")
+        tagged_iid.token_loc = x
     else:
         tagged_iid.build_index_of_index()
         dumping_ioi = json.dumps(tagged_iid.token_loc)
@@ -50,29 +53,30 @@ if __name__ == "__main__":
     #iid = load_json("inverted_index.json")
     urls = load_json("urlindex.json")
     stemmer = PorterStemmer()
-    user_input = input("SEARCH: ")
-    strat_time = datetime.datetime.now()
-    user_input = user_input.split()
-    terms = [stemmer.stem(token) for token in user_input]
-    local_iid = {}
-    bigram_iid = {}
-    trigram_iid = {}
-    for token in terms:
-        local_iid.update(iid.find_token(token))
-    for token in nltk.bigrams(terms):
-        bigram_iid.update(bigrams.find_token(token))
-    for toke in nltk.trigrams(terms):
-        trigram_iid.update(trigrams.find_token(token))
-    
-    # print(query_iid) 
-    result = search.query_processing(terms, iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
+    while True:
+        user_input = input("SEARCH: ")
+        strat_time = datetime.datetime.now()
+        user_input = user_input.split()
+        terms = [stemmer.stem(token) for token in user_input]
+        local_iid = {}
+        bigram_iid = {}
+        trigram_iid = {}
+        for token in terms:
+            local_iid.update(iid.find_token(token))
+        for token in nltk.bigrams(terms):
+            bigram_iid.update(bigrams.find_token(token))
+        for toke in nltk.trigrams(terms):
+            trigram_iid.update(trigrams.find_token(token))
+        
+        # print(query_iid) 
+        result = search.query_processing(terms, local_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
 
-    
-    print("Top 10 urls: ")
-    for doc_id in result[:10]:
-        print(urls[str(doc_id)])
-    end_time = datetime.datetime.now()
-    duration = (strat_time - end_time).microseconds /1000
+        
+        print("Top 10 urls: ")
+        for doc_id in result[:10]:
+            print(urls[str(doc_id)])
+        end_time = datetime.datetime.now()
+        duration = (strat_time - end_time).microseconds /1000
     # for doc_id in target_doc_ids:
     #     #print(doc_id)
     #     print(urls[str(doc_id)])
