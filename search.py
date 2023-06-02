@@ -2,6 +2,9 @@ from collections import defaultdict, Counter
 import math
 import bisect
 import numpy, numpy.linalg
+import multiprocessing
+
+TOTAL_PAGES = 0
 
 def tf_idf(term: str, doc_id: int, iid: defaultdict[str, list[(int, int)]], total_pages: int, term_frequency=None):
     postings = iid[term]
@@ -40,88 +43,99 @@ def get_intersection(intersection: list[(int, int)], new_term_postings) -> list[
 def cosine_similarity(list1: list[int], list2: list[int]):
     return numpy.dot(list1, list2) / (numpy.linalg.norm(list1) * numpy.linalg.norm(list2))
 
-def query_processing(q, terms: list[str | tuple], iid: dict[str, list[tuple[int]]], total_pages, headings_iid:dict[str, list[tuple[int]]], tagged_iid) -> list[int]:
-    query_iid = {}
-    headings = {}
-    tagged = {}
-    for token in terms:
-        query_iid.update(iid.find_token(token))
-        headings.update(headings_iid.find_token(token))
-        tagged.update(tagged_iid.find_token(token))
-    terms = sorted(terms, key=lambda x: len(query_iid[x]))
-    intersection = None
-    headings_intersection = None
-    tagged_intersection = None
-    doc_scores = defaultdict(list)
-    for term in terms:
-        if headings_intersection == None:
-            headings_intersection = [(x[0], x[1]) for x in headings[term]]
-        if tagged_intersection == None:
-            tagged_intersection = [(x[0], x[1]) for x in tagged[term]]
-        if intersection == None:
-            intersection = [(x[0], x[1]) for x in query_iid[term]]
-        else:
-            new_term_postings = [(x[0], x[1]) for x in query_iid[term]]
-            intersection = get_intersection(intersection, new_term_postings)
-            headings_intersection = get_intersection(intersection,headings_intersection)
-            tagged_intersection = get_intersection(intersection, tagged_intersection)
-        for doc_id, frequency in intersection:
-            if (doc_id, frequency) in headings_intersection:
-                doc_scores[doc_id].append((1+ math.log(frequency))*1.3)
-            elif (doc_id,frequency) in tagged_intersection:
-                doc_scores[doc_id].append((1+ math.log(frequency))*1.1)
-            else:
-                doc_scores[doc_id].append(1+ math.log(frequency))
+# def query_processing(q, terms: list[str | tuple], iid: dict[str, list[tuple[int]]], total_pages, headings_iid:dict[str, list[tuple[int]]], tagged_iid) -> list[int]:
+#     query_iid = {}
+#     headings = {}
+#     tagged = {}
+#     for token in terms:
+#         query_iid.update(iid.find_token(token))
+#         headings.update(headings_iid.find_token(token))
+#         tagged.update(tagged_iid.find_token(token))
+#     terms = sorted(terms, key=lambda x: len(query_iid[x]))
+#     intersection = None
+#     headings_intersection = None
+#     tagged_intersection = None
+#     doc_scores = defaultdict(list)
+#     for term in terms:
+#         if headings_intersection == None:
+#             headings_intersection = [(x[0], x[1]) for x in headings[term]]
+#         if tagged_intersection == None:
+#             tagged_intersection = [(x[0], x[1]) for x in tagged[term]]
+#         if intersection == None:
+#             intersection = [(x[0], x[1]) for x in query_iid[term]]
+#         else:
+#             new_term_postings = [(x[0], x[1]) for x in query_iid[term]]
+#             intersection = get_intersection(intersection, new_term_postings)
+#             headings_intersection = get_intersection(intersection,headings_intersection)
+#             tagged_intersection = get_intersection(intersection, tagged_intersection)
+#         for doc_id, frequency in intersection:
+#             if (doc_id, frequency) in headings_intersection:
+#                 doc_scores[doc_id].append((1+ math.log(frequency))*1.3)
+#             elif (doc_id,frequency) in tagged_intersection:
+#                 doc_scores[doc_id].append((1+ math.log(frequency))*1.1)
+#             else:
+#                 doc_scores[doc_id].append(1+ math.log(frequency))
     
-    # calculate the cosine similarity
-    query_as_doc = Counter(terms)
-    query_score = []
+#     # calculate the cosine similarity
+#     query_as_doc = Counter(terms)
+#     query_score = []
+#     for term in terms:
+#         print(term)
+#         query_score.append(tf_idf(term, -1, query_iid, total_pages, term_frequency=query_as_doc[term]))
+#     pages_with_all_terms = [doc_id for doc_id in doc_scores if len(doc_scores[doc_id]) == len(query_score)]
+#     ranking = sorted(pages_with_all_terms, 
+#                      key= lambda doc_id: cosine_similarity(doc_scores[doc_id], query_score), reverse=True)
+#     print(ranking)
+#     q.put(ranking)
+
+
+
+
+def ngrams_processing(q: multiprocessing.Queue, terms, ngrams_iid) -> dict[int, int]:
+    local_iid = {}
+    for token in terms:
+        local_iid.update(ngrams_iid.find_token(token))
+    terms = sorted(terms, key=lambda x: len(local_iid[x]))
+    doc_scores = defaultdict(list)
+    intersection = None
     for term in terms:
-        print(term)
-        query_score.append(tf_idf(term, -1, query_iid, total_pages, term_frequency=query_as_doc[term]))
-    pages_with_all_terms = [doc_id for doc_id in doc_scores if len(doc_scores[doc_id]) == len(query_score)]
-    ranking = sorted(pages_with_all_terms, 
-                     key= lambda doc_id: cosine_similarity(doc_scores[doc_id], query_score), reverse=True)
-    print(ranking)
-    q.put(ranking)
+        if intersection == None:
+            intersection = [(x[0], x[1]) for x in local_iid[term]]
+        else:
+            new_term_postings = [(x[0], x[1]) for x in local_iid[term]]
+            intersection = get_intersection(intersection, new_term_postings)
+    for doc_id, frequency in intersection:
+        doc_scores[doc_id] = frequency * .05 + 1
+    return doc_scores
 
-'''
-def query_processing(all the index and the query):
-    if query is more than 1 word: bigramify query
-    if query is more than 2 words: trigramify query
-
-    by process i mean return a dict {docid: processed score}
-    these processes can be multiprocessed ig
-
-    process the 1 word index + header + tagged
-    these all have keys as 1 word, so after processing 1 word index
-    apply the multiplier 
-
-    process bigrams
-
-    process trigrams
-
-    idk how to combine these scores, but one way is to add them
-    the best documents would have the highest scores
-'''
-
-def bigramify_query(terms: list[str]) -> list[str]:
-    'Change query to index bigrams index'
-    bigrams = []
-    prev = terms[0]
-    for term in terms[1:]:
-        bigrams.append((prev, term))
-    return bigrams
+def positional_processing(query, cand_docids: dict, local_iid):
+    terms: list[(str, str, int)] = posify(query)
+    for term in terms:
+        first_posting = local_iid[term[0]]
+        second_posting = local_iid[term[1]]
+        i = 0
+        j = 0
+        while i < len(first_posting) and j < len(second_posting):
+            if first_posting[i][0] == second_posting[i][0] and first_posting[i][0] in cand_docids:
+                freq = positional_matching(first_posting[i], second_posting[i], term[2])
+                cand_docids[first_posting[i][0]] *= freq * .05 + 1
+                i += 1
+                j += 1
+            elif first_posting[i][0] < second_posting[i][0]:
+                i += 1
+            else:
+                j += 1
+    return cand_docids
         
-
-def trigramify_query(terms: list[str]) -> list[str]:
-    'Change query to index trigrams index'
+def posify(query):
     pass
+
+
 
 def positional_matching(list1: list[int], list2: list[int], target) -> set[int]:
     'Find how many integers in the list1 are a target number difference from list2'
-    i = 0
-    j = 0
+    i = 2
+    j = 2
     res = 0
     while i < len(list1) and j < len(list2):
         if list2[i] - list1[i] == target:
@@ -133,10 +147,3 @@ def positional_matching(list1: list[int], list2: list[int], target) -> set[int]:
         else:
             j += 1    
     return res
-
-def positional_processing(terms: list[str], iid: dict[str, list[tuple[int]]]) -> int:
-    '''
-    Enumerates valid term pairs and determines if there is a positional difference match 
-    in the inverted index
-    '''
-    pass
