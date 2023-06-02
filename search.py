@@ -45,12 +45,13 @@ def get_intersection(intersection: list[(int, int)], new_term_postings) -> list[
 def cosine_similarity(list1: list[int], list2: list[int]):
     return numpy.dot(list1, list2) / (numpy.linalg.norm(list1) * numpy.linalg.norm(list2))
 
-def single_word_process(q, terms, iid, headings_iid, tagged_iid, total_pages):
+def single_word_process(q, terms, iid, champion_iid, headings_iid, tagged_iid, total_pages):
     # assume i am getting the postings as input
     # all of them are dictionaries
     MIN_DOCS = 30
 
-    terms.sort(key=lambda x: len(iid[x]) if x in iid else math.inf)
+    unsorted_terms = terms
+    terms = sorted(terms, key=lambda x: len(iid[x]) if x in iid else math.inf)
     doc_scores = dict()
     multiplier = dict()
     for term in tagged_iid:
@@ -61,7 +62,6 @@ def single_word_process(q, terms, iid, headings_iid, tagged_iid, total_pages):
         for posting in headings_iid[term]:
             doc_id = posting[0]
             multiplier[doc_id] = 1.3
-
     for i in range(len(terms)):
         add_more = len(doc_scores) < MIN_DOCS
         if terms[i] not in iid:
@@ -73,7 +73,6 @@ def single_word_process(q, terms, iid, headings_iid, tagged_iid, total_pages):
                 doc_scores[doc_id] = [0 for _ in range(len(terms))]
             if doc_id in doc_scores:
                 doc_scores[doc_id][i] = (1 + math.log(freq))
-
     query_as_doc = Counter(terms)
     query_score = []
     for term in terms:
@@ -82,14 +81,14 @@ def single_word_process(q, terms, iid, headings_iid, tagged_iid, total_pages):
     for doc_id in doc_scores:
         final_score_dict[doc_id] = cosine_similarity(doc_scores[doc_id], query_score) * (multiplier[doc_id] if doc_id in multiplier else 1)
 
-    q.put(positional_processing(terms, final_score_dict, iid))
+    q.put(positional_processing(unsorted_terms, final_score_dict, iid))
 
 
-def query_processing(query, iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, total_pages) -> list[int]:
+def query_processing(query, iid, champion_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, total_pages) -> list[int]:
     single_queue = multiprocessing.Queue()
     bigrams_queue = multiprocessing.Queue()
     trigrams_queue = multiprocessing.Queue()
-    single = multiprocessing.Process(target=single_word_process, args=(single_queue, query, iid, headings_iid, tagged_iid, total_pages))
+    single = multiprocessing.Process(target=single_word_process, args=(single_queue, query, iid, champion_iid, headings_iid, tagged_iid, total_pages))
     bigrams = multiprocessing.Process(target=ngrams_processing, args=(bigrams_queue, list(nltk.bigrams(query)), bigram_iid))
     trigrams = multiprocessing.Process(target=ngrams_processing, args=(trigrams_queue, list(nltk.trigrams(query)), trigram_iid))
     # start = time.time_ns()
@@ -152,7 +151,7 @@ def positional_processing(query, cand_docids: dict, local_iid):
         i = 0
         j = 0
         while i < len(first_posting) and j < len(second_posting):
-            if first_posting[i][0] == second_posting[i][0] and first_posting[i][0] in cand_docids:
+            if first_posting[i][0] == second_posting[j][0] and first_posting[i][0] in cand_docids:
                 freq = positional_matching(first_posting[i], second_posting[i], term[2])
                 cand_docids[first_posting[i][0]] *= freq * .05 + 1
                 i += 1
