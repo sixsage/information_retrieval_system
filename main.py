@@ -4,7 +4,7 @@ from nltk.stem import PorterStemmer
 import os
 import json
 import multiprocessing
-import datetime
+import datetime, time
 import nltk
 
 TOTAL_PAGES = 41522
@@ -74,11 +74,10 @@ if __name__ == "__main__":
         # print(query_iid) 
         result = search.query_processing(terms, local_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
 
-        
         print("Top 10 urls: ")
+        end_time = datetime.datetime.now()
         for doc_id in result[:10]:
             print(urls[str(doc_id)])
-        end_time = datetime.datetime.now()
         duration = (strat_time - end_time).microseconds /1000
         print(duration)
     # for doc_id in target_doc_ids:

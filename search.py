@@ -48,7 +48,8 @@ def single_word_process(q, terms, iid, headings_iid, tagged_iid, total_pages):
     # assume i am getting the postings as input
     # all of them are dictionaries
     MIN_DOCS = 40
-    terms.sort(key=lambda x: len(iid[x]))
+    unsorted_terms = terms
+    terms = sorted(terms, key=lambda x: len(iid[x]))
     doc_scores = dict()
     multiplier = dict()
     for term in tagged_iid:
@@ -59,7 +60,6 @@ def single_word_process(q, terms, iid, headings_iid, tagged_iid, total_pages):
         for posting in headings_iid[term]:
             doc_id = posting[0]
             multiplier[doc_id] = 1.3
-
     for i in range(len(terms)):
         add_more = len(doc_scores) < 40
         for posting in iid[terms[i]]:
@@ -69,7 +69,6 @@ def single_word_process(q, terms, iid, headings_iid, tagged_iid, total_pages):
                 doc_scores[doc_id] = [0 for _ in range(len(terms))]
             if doc_id in doc_scores:
                 doc_scores[doc_id][i] = (1 + math.log(freq))
-
     query_as_doc = Counter(terms)
     query_score = []
     for term in terms:
@@ -78,7 +77,7 @@ def single_word_process(q, terms, iid, headings_iid, tagged_iid, total_pages):
     for doc_id in doc_scores:
         final_score_dict[doc_id] = cosine_similarity(doc_scores[doc_id], query_score) * (multiplier[doc_id] if doc_id in multiplier else 1)
 
-    q.put(positional_processing(terms, final_score_dict, iid))
+    q.put(positional_processing(unsorted_terms, final_score_dict, iid))
 
 
 def query_processing(query, iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, total_pages) -> list[int]:
@@ -141,8 +140,8 @@ def positional_processing(query, cand_docids: dict, local_iid):
     return cand_docids
         
 def posify(query):
-    stopwords = {"be", "can", "to"}
-    if len(query) > 3:
+    stopwords = set()
+    if len(query) <= 3:
         return []
     res = []
     i = 0
