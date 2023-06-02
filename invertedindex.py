@@ -63,7 +63,10 @@ class Index:
         #print("merged at :" , self.location)
         out = open(self.location, 'w', encoding="utf-8")
         while len(cur_dicts) != 0:
-            cur_min = list(min([dict.keys() for dict in cur_dicts]))[0]
+            cur_min = min([list(dict.keys())[0] for dict in cur_dicts])
+            # if cur_min == '12th' or cur_min == 'year':
+            #     print([dict.keys() for dict in cur_dicts])
+            #     print(cur_min)
             cur_postings = []
             for i in range(len(cur_dicts)):
                 if i >= len(cur_dicts):
@@ -364,8 +367,8 @@ def build_indexes():
     tokenizer = RegexpTokenizer(r'[a-zA-Z0-9]+')
     for domain in os.scandir(PATH_TO_PAGES):
         simhash_values = []
-        # if domain.name != "www_informatics_uci_edu":
-        #     continue
+        if domain.name != "cert_ics_uci_edu":
+            continue
         for page in os.scandir(domain.path):
             with open(page.path, "r") as file:
                 data = json.loads(file.read())
