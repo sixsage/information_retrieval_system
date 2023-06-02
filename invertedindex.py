@@ -119,6 +119,7 @@ class InvertedIndex(Index):
         super().__init__()
         self.location = loc
         self.partial_location = partial_loc
+        self.champion_loc = {}
 
     def add_page(self, stems, page_index) -> None:
         position = 0
@@ -157,6 +158,31 @@ class InvertedIndex(Index):
         parsed = line.strip().split(self.splitter)
         posting = [tuple([int(num_str) for num_str in doc.split(",")]) for doc in parsed[1].split("#@#")]
         return {parsed[0]: posting}
+    
+    def create_champion_list(self):
+        file_in = open(self.location)
+        file_out = open("champion_index.txt", "w")
+        line = file_in.readline()
+        while line:
+            key = line.split(self.splitter)[0]
+            posting = self.str_to_dict(line)[key]
+            posting_by_freq = sorted(posting, key = lambda x: x[1], reverse=True)
+            max = min(30,len(posting_by_freq))
+            iid = {key: posting_by_freq[:max]}
+            file_out.write(self.dict_to_str(iid))
+            line = file_in.readline()
+        file_in.close
+        file_out.close
+
+    def build_champion_index_of_index(self):
+        with open("champion_index.txt", encoding="utf-8") as f:
+            position = 0
+            line = f.readline()
+            while line: 
+                info = line.split(self.splitter)
+                self.champion_loc[info[0]] = position
+                position = f.tell()
+                line = f.readline()
 
 class BigramIndex(Index):
 
