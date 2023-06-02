@@ -6,7 +6,7 @@ import json
 import multiprocessing
 import datetime
 
-TOTAL_PAGES = 55393
+TOTAL_PAGES = 41522
 
 def load_json(file):
     with open(file, "r") as f:
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     #total pages need to be stored 
 
     if not (os.path.exists("final_index1.txt") and os.path.exists("urlindex.json")):
-        total_pages = invertedindex.build_indexes()
+        invertedindex.build_indexes()
     headings_iid = invertedindex.InvertedIndex("final_headings_index", "headings_index")
     headings_iid.build_index_of_index()
     iid = invertedindex.InvertedIndex()
