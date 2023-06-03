@@ -72,53 +72,36 @@ CATEGORY 1 - Bad Ranking Performance or Bad Runtime Performance
 
 CATEGORY 2 - Good Query Results
 
-    Query 1 -
-        Improved:
-            -
+    Query 1 - "video games as a tool"
         Explanation:
-            -
-    Query 2 -
-        Improved:
-            -
+            - This returned good results but took some time to process
+            - After optimizations we were able to keep the good results but make the query processing faster
+    Query 2 - "acm"
         Explanation:
-            -
-    Query 3 -
-        Improved:
-            -
+            - We get results fast and links are good
+            - After optimizations the pages we get are the same but the order changes and this new order makes more sense
+    Query 3 - "sports research"
         Explanation:
-            -
-    Query 4 -
-        Improved:
-            -
+            - Still good after bigram bias
+    Query 4 - "cristina lopes"
         Explanation:
-            -
+            - Pages include faculty pages and other related pages to Cristina Lopes
+            - After adding champion lists, we modified some parameters and the query stayed similar
     Query 5 -
-        Improved:
-            -
         Explanation:
             -
     Query 6 -
-        Improved:
-            -
         Explanation:
             -
     Query 7 -
-        Improved:
-            -
         Explanation:
             -
     Query 8 -
-        Improved:
-            -
         Explanation:
             -
     Query 9 -
-        Improved:
-            -
         Explanation:
             -
     Query 10 -
-        Improved:
-            -
         Explanation:
             -
