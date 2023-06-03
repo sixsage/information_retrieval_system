@@ -187,10 +187,10 @@ if __name__ == "__main__":
     q = st.text_input("search",on_change=update, key = "user_query")
     if "results" in st.session_state:
         st.write("results computed in: ", st.session_state["duration"], "ms")
-        for doc_id in st.session_state["results"][:10]:
+        for doc_id in st.session_state["results"]:
             url = st.session_state["urls"][str(doc_id)]
             print(url)
-            st.write(f'[{url}](%s)' % url)
+            st.write(f'[{url}]({url})')
     print("search complete")
     st.write("yay")
 
