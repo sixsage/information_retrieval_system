@@ -7,6 +7,7 @@ from collections import Counter, defaultdict
 from bs4 import BeautifulSoup
 import json
 import os
+import sys
 import duplicatecheck
 
 PATH_TO_PAGES = 'DEV'
@@ -15,7 +16,7 @@ class Index:
     def __init__(self) -> None:
         self.partial_indexes = []
         self.index = defaultdict(list)
-        self.dump_threshold = 15000
+        self.dump_threshold = 80 * (10 ** 6)
         self.location = ""
         self.splitter = "#$%^&"
         self.token_loc = {}
@@ -130,7 +131,8 @@ class InvertedIndex(Index):
     def add_page(self, stems, page_index) -> None:
         position = 0
         temp_index = defaultdict(list)
-        if page_index % self.dump_threshold == 0: 
+        if sys.getsizeof(self.index) > self.dump_threshold:
+            print('dumping because over thresh')
             self.dump(f"{self.partial_location}{len(self.partial_indexes)}.txt")
             self.index = defaultdict(list)
         for stem in stems:
@@ -207,7 +209,7 @@ class BigramIndex(Index):
     def __init__(self):
         Index.__init__(self)
         self.location = "bigram_index.txt"
-        self.dump_threshold = 10000
+        # self.dump_threshold = 10000
 
     def add_page(self, stemmed_tokens, doc_id):
         token_bigrams = nltk.bigrams(stemmed_tokens)
@@ -215,7 +217,8 @@ class BigramIndex(Index):
         for bigram, frequency in bigram_count.items():
             self.index[bigram].append((doc_id, frequency))
 
-        if doc_id % self.dump_threshold == 0:
+        if sys.getsizeof(self.index) > self.dump_threshold:
+            print('dumping because over thresh, bi')
             self.dump(f"bigram_partial{len(self.partial_indexes) + 1}.txt")
             self.index = defaultdict(list)
 
@@ -283,7 +286,7 @@ class TrigramIndex(Index):
     def __init__(self):
         Index.__init__(self)
         self.location = "trigram_index.txt"
-        self.dump_threshold = 10000
+        # self.dump_threshold = 10000
 
     def add_page(self, stemmed_tokens, doc_id):
         token_trigrams = nltk.trigrams(stemmed_tokens)
@@ -291,7 +294,8 @@ class TrigramIndex(Index):
         for trigram, frequency in bigram_count.items():
             self.index[trigram].append((doc_id, frequency))
 
-        if doc_id % self.dump_threshold == 0:
+        if sys.getsizeof(self.index) > self.dump_threshold:
+            print('dumping because over thresh, tri')
             self.dump(f"trigram_partial{len(self.partial_indexes) + 1}.txt")
             self.index = defaultdict(list)
 

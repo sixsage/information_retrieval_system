@@ -98,11 +98,11 @@ def single_word_process(terms, iid, local_iid, headings, tagged, total_pages):
             if stop_limit == 2:
                 break
     for term in champion_iid:
-        if term in tagged_iid:
+        if term in tagged_iid and len(tagged_iid[term]) < 200:
             for posting in tagged_iid[term]:
                 doc_id = posting[0]
                 multiplier[doc_id] = 1.1
-        if term in headings_iid:
+        if term in headings_iid and len(headings_iid[term]) < 200:
             for posting in headings_iid[term]:
                 doc_id = posting[0]
                 multiplier[doc_id] = 1.3
