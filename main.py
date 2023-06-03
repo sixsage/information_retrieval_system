@@ -19,8 +19,8 @@ def load_json(file):
 if __name__ == "__main__":
     #total pages need to be stored 
 
-    if not (os.path.exists("final_index1.txt") and os.path.exists("urlindex.json")):
-        invertedindex.build_indexes()
+    #if not (os.path.exists("final_index1.txt") and os.path.exists("urlindex.json")):
+    invertedindex.build_indexes()
     headings = invertedindex.InvertedIndex("final_headings_index.txt", "headings_index")
     if os.path.exists("headings_ioi.json"):
         x = load_json("headings_ioi.json")
