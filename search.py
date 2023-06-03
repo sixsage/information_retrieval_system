@@ -76,6 +76,15 @@ def single_word_process(terms, iid, local_iid, headings, tagged, total_pages):
         headings_iid.update(headings.find_token(terms[i]))
         tagged_iid.update(tagged.find_token(terms[i]))
         visited.add(terms[i])
+        if terms[i] in headings_iid:
+            if len(headings_iid[terms[i]]) < 25:
+                for posting in headings_iid[terms[i]]:
+                    doc_id = posting[0]
+                    freq = posting[1]
+                    if doc_id not in doc_scores and add_more:
+                        doc_scores[doc_id] = [0 for _ in range(len(terms))]
+                    if doc_id in doc_scores:
+                        doc_scores[doc_id][i] = (1 + math.log(freq))
         if terms[i] in champion_iid:
             for posting in champion_iid[terms[i]]:
                 doc_id = posting[0]
@@ -109,7 +118,6 @@ def single_word_process(terms, iid, local_iid, headings, tagged, total_pages):
 
     # q.put(positional_processing(unsorted_terms, final_score_dict, iid))
     return positional_processing(unsorted_terms, final_score_dict, local_iid)
-    return final_score_dict
 
 
 def query_processing(query, iid, local_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, total_pages) -> list[int]:
@@ -160,7 +168,7 @@ def ngrams_processing(terms, candidates, special) -> dict[int, int]:
         for doc in docs:
             doc_scores[doc[0]] += doc[1]
     for doc_id in doc_scores:
-        doc_scores[doc_id] = doc_scores[doc_id] * .02 + 1
+        doc_scores[doc_id] = doc_scores[doc_id] * .04 + 1
         
     # q.put(doc_scores)
     for doc_id in candidates:

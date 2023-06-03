@@ -369,8 +369,8 @@ def build_indexes():
     tokenizer = RegexpTokenizer(r'[a-zA-Z0-9]+')
     for domain in os.scandir(PATH_TO_PAGES):
         simhash_values = []
-        if domain.name != "cert_ics_uci_edu":
-            continue
+        # if domain.name != "cert_ics_uci_edu":
+        #     continue
         for page in os.scandir(domain.path):
             with open(page.path, "r") as file:
                 data = json.loads(file.read())
