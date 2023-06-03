@@ -178,6 +178,8 @@ def ngrams_processing(terms, candidates, special) -> dict[int, int]:
 
 def positional_processing(query, cand_docids: dict, local_iid):
     start_time = time.time()
+    if len(set(query)) < 2:
+        return cand_docids
     terms: list[(str, str, int)] = posify(query)
     for term in terms:
         if term[0] not in local_iid or term[1] not in local_iid:
