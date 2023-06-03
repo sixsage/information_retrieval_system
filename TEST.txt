@@ -1,0 +1,124 @@
+THIS IS THE FILE WHERE WE DOCUMENT OUR QUERY TESTS
+
+CATEGORY 1 - Bad Ranking Performance or Bad Runtime Performance
+    Query 1 - "machine learning"
+        Improved (Ranking):
+            - Added bigrams index to ensure machine and learning were together
+        Explanation:
+            - By rewarding document ranks when there is an equivalent bigram, the query showed results
+              related to the topic of machine learning rather than machine and learning separately.
+
+    Query 2 - "binary search trees"
+        Improved (Ranking):
+            - Added trigrams index to ensure words like binary search and trees were all together
+        Explanation:
+            - Many results had binary, search and trees separately in the document, not properly
+              catching the purpose of the query. Trigrams ensure that these words are in succession
+
+    Query 3 - "learning machinery in computation"
+        Improved (Ranking):
+            - Stemmed query and tokens in inverted indexes
+        Explanation:
+            - Stemming allows for past tense, present tense, future tense, to all map to the same stem
+            - All of the possible tenses of a word should be relavant when querying
+
+    Query 4 - "to be or not to be with extra words" :
+        Improved (Runtime):
+            - Added pre-query caching of common stop words
+        Explanation:
+            - Stop words are very common and have larger postings
+            - Most queries will include stop words so there is merit in preprocessing the stop words
+    
+    Query 5 - "how to train your dragon with computer science principles in order to do binary search tree problems for a programming class"
+        Improved (Runtime):
+            - Added a threshold for max documents processed when considering candidate documents
+        Explanation:
+            - Since we order terms by rarity, the most relavant documents will already be in the accumulated candidate documents by
+              a certain threshold
+    Query 6 - "master of software engineering"
+        Improved (Runtime/Ranking):
+            - Added champion lists to pick out the best documents in a token
+        Explanation:
+            - Speeds up query processing because there are less documents to go through
+            - Doesn't really affect quality because we take the top documents from each token
+    Query 7 - "i want to be the very best software engineer to be the very but to be the very best like the to be"
+        Improved (Runtime):
+            - Made the query into a set before processing
+        Explanation:
+            - Removed the duplicates so there were less calls to find the token in the index
+            - Less iterations in the processing for loops
+            - Still kept integrity of positions for positional processing so no changes there
+    Query 8 - "how to do the computer science project where i need to follow basic instructions because i cannot read"
+        Improved (Runtime):
+            - Build index along with the processing
+        Explanation:
+            - Looking at the time, much of the preprocessing, building the local indexes, took a lot of time
+            - Changing so that building the index as you go allowed for less computation in the case of early termination
+
+    Query 9 - "mission the mission to mississippi state misspel word"
+        Improved (Runtime/Ranking):
+            - Changed bigrams and trigrams to compute multipliers instead of intersection
+        Explanation:
+            - Computing if all bigrams/trigrams appeared in a document was inefficient
+            - Very rare for all n-gram to appear in document
+            - Faster to compute multipliers for the documents
+
+    Query 10 - "is there a medical field in computer science when cows can fly and classes have papers to write with confusing instructions students struggle"
+        Improved (Runtime):
+            - Capped positional processing to maximum of 5 checks
+        Explanation:
+            - Too many combinations were being generated with little added benefit
+            - Changed to only take 5 and results stayed similar
+
+CATEGORY 2 - Good Query Results
+
+    Query 1 -
+        Improved:
+            -
+        Explanation:
+            -
+    Query 2 -
+        Improved:
+            -
+        Explanation:
+            -
+    Query 3 -
+        Improved:
+            -
+        Explanation:
+            -
+    Query 4 -
+        Improved:
+            -
+        Explanation:
+            -
+    Query 5 -
+        Improved:
+            -
+        Explanation:
+            -
+    Query 6 -
+        Improved:
+            -
+        Explanation:
+            -
+    Query 7 -
+        Improved:
+            -
+        Explanation:
+            -
+    Query 8 -
+        Improved:
+            -
+        Explanation:
+            -
+    Query 9 -
+        Improved:
+            -
+        Explanation:
+            -
+    Query 10 -
+        Improved:
+            -
+        Explanation:
+            -

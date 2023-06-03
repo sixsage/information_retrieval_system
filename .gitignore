@@ -4,3 +4,4 @@ DEV/
 *.pyc
 __pycache__/
 .venv/
+!TEST.txt
