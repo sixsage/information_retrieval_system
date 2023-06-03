@@ -70,12 +70,15 @@ def update():
 
     #links = []
     #print("Top 10 urls: ")
+    st.session_state["results"] = result
     duration_time = (e_time - s_time) * 1000
-    st.write("results for ", user_input, ":", "computed in: ", duration_time, "ms")
-    for doc_id in result[:10]:
-        url = st.session_state["urls"][str(doc_id)]
-        print(url)
-        st.write(f'[{url}](%s)' % url)
+    st.session_state["duration"] = duration_time
+    st.session_state["user_query"] = ""
+    # st.write("results for ", user_input, ":", "computed in: ", duration_time, "ms")
+    # for doc_id in result[:10]:
+    #     url = st.session_state["urls"][str(doc_id)]
+    #     print(url)
+    #     st.write(f'[{url}](%s)' % url)
         #links.append(str(doc_id))
 
     print(duration_time)
@@ -168,10 +171,8 @@ if __name__ == "__main__":
         if "urls" not in st.session_state:
             st.session_state["urls"] = urls
         
-        
-        
-    for token in STOP_WORDS:
-        st.session_state["local_iid"].update(st.session_state["iid"].find_token(st.session_state["stemmer"].stem(token)))
+        for token in STOP_WORDS:
+            st.session_state["local_iid"].update(st.session_state["iid"].find_token(st.session_state["stemmer"].stem(token)))
     #while True:
         #user_input = input("SEARCH: ")
     st.set_page_config(page_title="search")
@@ -184,6 +185,12 @@ if __name__ == "__main__":
         st.session_state["user_query"] = ""
 
     q = st.text_input("search",on_change=update, key = "user_query")
+    if "results" in st.session_state:
+        st.write("results computed in: ", st.session_state["duration"], "ms")
+        for doc_id in st.session_state["results"][:10]:
+            url = st.session_state["urls"][str(doc_id)]
+            print(url)
+            st.write(f'[{url}](%s)' % url)
     print("search complete")
     st.write("yay")
 
