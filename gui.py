@@ -177,7 +177,7 @@ if __name__ == "__main__":
         #user_input = input("SEARCH: ")
     st.set_page_config(page_title="search")
 
-    st.title("Home page")
+    st.markdown("<h1 style='text-align: center; color: BROWN;'>GOOGLE</h1>", unsafe_allow_html=True)
     # if "user_query" not in st.session_state:
     #     st.session_state["user_query"] = ""
 

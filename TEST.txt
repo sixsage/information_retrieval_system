@@ -87,21 +87,27 @@ CATEGORY 2 - Good Query Results
         Explanation:
             - Pages include faculty pages and other related pages to Cristina Lopes
             - After adding champion lists, we modified some parameters and the query stayed similar
-    Query 5 -
+    Query 5 - "cs178"
         Explanation:
-            -
-    Query 6 -
+            - Pages included classes related to the course
+    Query 6 - "dragon tree"
         Explanation:
-            -
-    Query 7 -
+            - Not many pages with dragon in the corpus
+            - Was consistent throughtout changes with bigrams and rarity checking 
+            - Kept dragon relavant without including trees from binary search trees
+    Query 7 - "big o notation"
         Explanation:
-            -
-    Query 8 -
+            - Always had related links to data structure class pages
+            - Positional index improved results a bit by rewarding big notation as o is referred to commonly as omega
+    Query 8 - "computer science internship"
         Explanation:
-            -
-    Query 9 -
+            - Shows related career websites and courses related to internships for computer science
+            - Continued to have similar results even when removing full conjunctive queries and adding positional/ngrams
+    Query 9 - "traveling salesman"
         Explanation:
-            -
-    Query 10 -
+            - Consistently had pages mentioning traveling and salesman together which were all related to graphs
+            - Did not change much when adding champion lists
+    Query 10 - "information retrieval"
         Explanation:
-            -
+            - Shows all pages with computer science 121 course references
+            - None of the modifications with the exception of bigrams impacted this query
