@@ -5,8 +5,8 @@ import numpy, numpy.linalg
 import multiprocessing
 import nltk
 import time
-TOTAL_PAGES = 0
 
+STOP_WORDS = {'stop', 'the', 'to', 'and', 'a', 'in', 'it', 'is', 'I', 'that', 'had', 'on', 'for', 'were', 'was'}
 def tf_idf(term: str, doc_id: int, iid: defaultdict[str, list[(int, int)]], total_pages: int, term_frequency=None):
     if term not in iid:
         return 0
@@ -46,49 +46,72 @@ def cosine_similarity(list1: list[int], list2: list[int]):
     return numpy.dot(list1, list2) / (numpy.linalg.norm(list1) * numpy.linalg.norm(list2))
 
 # def single_word_process(q, terms, iid, champion_iid, headings_iid, tagged_iid, total_pages):
-def single_word_process(terms, iid, champion_iid, headings_iid, tagged_iid, total_pages):
+def single_word_process(terms, iid, local_iid, headings, tagged, total_pages):
     # assume i am getting the postings as input
     # all of them are dictionaries
     MIN_DOCS = 40
     start_time = time.time()
     unsorted_terms = terms
-    terms = sorted(terms, key=lambda x: len(iid[x]) if x in iid else math.inf)
+    terms = sorted(terms, key=lambda x: len(local_iid[x]) if x in local_iid else math.inf)
     doc_scores = dict()
     multiplier = dict()
-    for term in tagged_iid:
-        for posting in tagged_iid[term]:
-            doc_id = posting[0]
-            multiplier[doc_id] = 1.1
-    for term in headings_iid:
-        for posting in headings_iid[term]:
-            doc_id = posting[0]
-            multiplier[doc_id] = 1.3
+    visited = set()
+    champion_iid = {}
+    tagged_iid = {}
+    headings_iid = {}
+    stop_limit = 0
+    # for term in tagged_iid:
+    #     for posting in tagged_iid[term]:
+    #         doc_id = posting[0]
+    #         multiplier[doc_id] = 1.1
+    # for term in headings_iid:
+    #     for posting in headings_iid[term]:
+    #         doc_id = posting[0]
+    #         multiplier[doc_id] = 1.3
     for i in range(len(terms)):
         add_more = len(doc_scores) < MIN_DOCS
-        if terms[i] not in iid:
+        if terms[i] in visited:
             continue
-        for posting in iid[terms[i]]:
+        champion_iid.update(iid.find_token_champion(terms[i]))
+        headings_iid.update(headings.find_token(terms[i]))
+        tagged_iid.update(tagged.find_token(terms[i]))
+        visited.add(terms[i])
+        for posting in champion_iid[terms[i]]:
             doc_id = posting[0]
             freq = posting[1]
             if doc_id not in doc_scores and add_more:
                 doc_scores[doc_id] = [0 for _ in range(len(terms))]
             if doc_id in doc_scores:
                 doc_scores[doc_id][i] = (1 + math.log(freq))
+        if terms[i] in STOP_WORDS:
+            stop_limit += 1
+            if stop_limit == 2:
+                break
+    for term in champion_iid:
+        if term in tagged_iid:
+            for posting in tagged_iid[term]:
+                doc_id = posting[0]
+                multiplier[doc_id] = 1.1
+        if term in headings_iid:
+            for posting in headings_iid[term]:
+                doc_id = posting[0]
+                multiplier[doc_id] = 1.3
     print('time after getting tf at position', time.time() - start_time)
     query_as_doc = Counter(terms)
     query_score = []
     for term in terms:
-        query_score.append(tf_idf(term, -1, iid, total_pages, term_frequency=query_as_doc[term]))
+        query_score.append(tf_idf(term, -1, local_iid, total_pages, term_frequency=query_as_doc[term]))
     final_score_dict = dict()
     for doc_id in doc_scores:
         final_score_dict[doc_id] = cosine_similarity(doc_scores[doc_id], query_score) * (multiplier[doc_id] if doc_id in multiplier else 1)
     print('time after getting score:', time.time() - start_time)
 
     # q.put(positional_processing(unsorted_terms, final_score_dict, iid))
-    return positional_processing(unsorted_terms, final_score_dict, iid)
+    return positional_processing(unsorted_terms, final_score_dict, local_iid)
+    return final_score_dict
 
 
-def query_processing(query, iid, champion_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, total_pages) -> list[int]:
+def query_processing(query, iid, local_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, total_pages) -> list[int]:
     start_time = time.time()
     # single_queue = multiprocessing.Queue()
     # bigrams_queue = multiprocessing.Queue()
@@ -104,7 +127,7 @@ def query_processing(query, iid, champion_iid, bigram_iid, trigram_iid, headings
     # candidates = single_queue.get()
     # bigram_scores = bigrams_queue.get()
     # trigram_scores = trigrams_queue.get()
-    candidates = single_word_process(query, iid, champion_iid, headings_iid, tagged_iid, total_pages)
+    candidates = single_word_process(query, iid, local_iid, headings_iid, tagged_iid, total_pages)
     bigram_multiplied = ngrams_processing(list(nltk.bigrams(query)), candidates, bigram_iid)
     trigram_multiplied = ngrams_processing(list(nltk.trigrams(query)), bigram_multiplied, trigram_iid)
     print('after all functions runs', time.time() - start_time)
@@ -120,10 +143,16 @@ def query_processing(query, iid, champion_iid, bigram_iid, trigram_iid, headings
 
 
 # def ngrams_processing(q: multiprocessing.Queue, terms, special_iid) -> dict[int, int]:
-def ngrams_processing(terms, candidates, special_iid) -> dict[int, int]:
+def ngrams_processing(terms, candidates, special) -> dict[int, int]:
     start_time = time.time()
     doc_scores = defaultdict(int)
+    special_iid = {}
+    visited = set()
     for term in terms:
+        if term in visited:
+            continue
+        special_iid.update(special.find_token(term))
+        visited.add(term)
         if term not in special_iid:
             continue
         docs = [(x[0], x[1]) for x in special_iid[term] if x[0] in candidates]
@@ -151,7 +180,7 @@ def positional_processing(query, cand_docids: dict, local_iid):
         while i < len(first_posting) and j < len(second_posting):
             if first_posting[i][0] == second_posting[j][0] and first_posting[i][0] in cand_docids:
                 freq = positional_matching(first_posting[i], second_posting[j], term[2])
-                cand_docids[first_posting[i][0]] *= freq * .05 + 1
+                cand_docids[first_posting[i][0]] *= freq * .2 + 1
                 i += 1
                 j += 1
             elif first_posting[i][0] < second_posting[j][0]:
@@ -162,7 +191,6 @@ def positional_processing(query, cand_docids: dict, local_iid):
     return cand_docids
         
 def posify(query):
-    stopwords = set()
     if len(query) <= 3:
         return []
     res = []
@@ -170,10 +198,12 @@ def posify(query):
     while i < len(query):
         j = i + 3
         while j < len(query):
-            if query[i] in stopwords:
+            if query[i] in STOP_WORDS:
                 break
-            elif query[j] not in stopwords:
+            elif query[j] not in STOP_WORDS:
                 res.append((query[i],query[j],j-i))
+                if len(res) == 5:
+                    return res
             j += 1
         i += 1
     return res

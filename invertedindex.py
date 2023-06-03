@@ -268,10 +268,10 @@ class BigramIndex(Index):
     def find_token(self, token) -> dict:
         #print('dinding token:', token)
         line = ''
-        print("getting:", token)
+        # print("getting:", token)
         with open(self.location, encoding="utf-8") as f:
             if token not in self.token_loc:
-                print("not in index", self.location)
+                # print("not in index", self.location)
                 return {}
             f.seek(self.token_loc[token])
             line = f.readline()
@@ -347,7 +347,7 @@ class TrigramIndex(Index):
         line = ''
         with open(self.location, encoding="utf-8") as f:
             if token not in self.token_loc:
-                print("not in index", self.location)
+                # print("not in index", self.location)
                 return {}
             f.seek(self.token_loc[token])
             line = f.readline()

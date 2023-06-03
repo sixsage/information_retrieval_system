@@ -9,6 +9,7 @@ import nltk
 import time
 
 TOTAL_PAGES = 41522
+STOP_WORDS = {'stop', 'the', 'to', 'and', 'a', 'in', 'it', 'is', 'I', 'that', 'had', 'on', 'for', 'were', 'was', 'how', 'of', 'do'}
 
 def load_json(file):
     with open(file, "r") as f:
@@ -71,23 +72,27 @@ if __name__ == "__main__":
     headings_iid = {}
     tagged_iid = {}
     champion_iid = {}
+    for token in STOP_WORDS:
+        local_iid.update(iid.find_token(stemmer.stem(token)))
     while True:
         user_input = input("SEARCH: ")
         s_time = time.time()
         user_input = user_input.split()
         terms = [stemmer.stem(token) for token in user_input]
         for token in terms:
-            local_iid.update(iid.find_token(token))
-            headings_iid.update(headings.find_token(token))
-            tagged_iid.update(tagged.find_token(token))
-            champion_iid.update(iid.find_token_champion(token))
-        for token in nltk.bigrams(terms):
-            bigram_iid.update(bigrams.find_token(token))
-        for token in nltk.trigrams(terms):
-            trigram_iid.update(trigrams.find_token(token))
+            if token not in local_iid:
+                local_iid.update(iid.find_token(token))
+        #     headings_iid.update(headings.find_token(token))
+        #     tagged_iid.update(tagged.find_token(token))
+            # champion_iid.update(iid.find_token_champion(token))
+        # for token in nltk.bigrams(terms):
+        #     bigram_iid.update(bigrams.find_token(token))
+        # for token in nltk.trigrams(terms):
+        #     trigram_iid.update(trigrams.find_token(token))
         # print(query_iid) 
         print('after all updates:', time.time() - s_time)
-        result = search.query_processing(terms, local_iid, champion_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
+        #result = search.query_processing(terms, local_iid, champion_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
+        result = search.query_processing(terms, iid, local_iid, bigrams, trigrams, headings, tagged, TOTAL_PAGES)
         e_time = time.time()
         print("Top 10 urls: ")
         for doc_id in result[:10]:
