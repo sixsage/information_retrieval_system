@@ -76,13 +76,14 @@ def single_word_process(terms, iid, local_iid, headings, tagged, total_pages):
         headings_iid.update(headings.find_token(terms[i]))
         tagged_iid.update(tagged.find_token(terms[i]))
         visited.add(terms[i])
-        for posting in champion_iid[terms[i]]:
-            doc_id = posting[0]
-            freq = posting[1]
-            if doc_id not in doc_scores and add_more:
-                doc_scores[doc_id] = [0 for _ in range(len(terms))]
-            if doc_id in doc_scores:
-                doc_scores[doc_id][i] = (1 + math.log(freq))
+        if terms[i] in champion_iid:
+            for posting in champion_iid[terms[i]]:
+                doc_id = posting[0]
+                freq = posting[1]
+                if doc_id not in doc_scores and add_more:
+                    doc_scores[doc_id] = [0 for _ in range(len(terms))]
+                if doc_id in doc_scores:
+                    doc_scores[doc_id][i] = (1 + math.log(freq))
         if terms[i] in STOP_WORDS:
             stop_limit += 1
             if stop_limit == 2:
