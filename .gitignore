@@ -3,3 +3,6 @@ DEV/
 *.txt
 *.pyc
 __pycache__/
+.venv/
+!TEST.txt
+!README.txt

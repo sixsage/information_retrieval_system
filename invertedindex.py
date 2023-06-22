@@ -1,112 +1,54 @@
 # Names: Jacob Lee Kyuho Oh Aali Bin Rehan
 
 from nltk.stem import PorterStemmer
-from nltk.tokenize import word_tokenize
+from nltk.tokenize import RegexpTokenizer
+import nltk
 from collections import Counter, defaultdict
 from bs4 import BeautifulSoup
 import json
-import bisect
 import os
-import math
-import sys
+import duplicatecheck
 
 PATH_TO_PAGES = 'DEV'
 
-class InvertedIndexToken:
-    def __init__(self, token: str, doc_id: list):
-        self.token = token
-        self.doc_id = doc_id
+class Index:
+    def __init__(self) -> None:
+        self.partial_indexes = []
+        self.index = defaultdict(list)
+        self.dump_threshold = 15000
+        self.location = ""
+        self.splitter = "#$%^&"
+        self.token_loc = {}
     
-    def add_docId(self, new_id):
-        # this isnt even correct
-        # for i,doc in enumerate(self.docId):
-        #     if doc < newId:
-        #         continue
-        # self.docId = self.docId[:i-1] + [newId]  + self.docId[i:]
-        bisect.insort(self.doc_id, new_id)
+    def stemmer(self, tokens: list[str]):
+        # tokens = word_tokenize(content)
+        stemmer = PorterStemmer()
+        stemmed_words = [stemmer.stem(token) for token in tokens]
+        return stemmed_words
     
-class Converter:
-    def __init__(self, itt: InvertedIndexToken = None, file: str = None):
-        self.itt = itt
-        self.file = file
+    def merge_postings(self, allpostings):
+        res = []
+        for posting in allpostings:
+            res.extend(posting)
+        return res
     
-    def to_str(self):
-        return str(self.itt.token) + ": " + str(self.itt.doc_id)
+    def str_to_dict(self, line):
+        return dict(line)
     
-    def to_itt(self):
-        file_list = self.file.split(": ")
-        token = file_list[0]
-        doc_list = list(file_list[1])
-        return InvertedIndexToken(token, doc_list)
-
-def tokenizer(content: str):
-    tokens = word_tokenize(content)
-    stemmer = PorterStemmer()
-    stemmed_words = [stemmer.stem(token) for token in tokens]
-    return Counter(stemmed_words)
-
-# not finished yet; need to add correct parsing
-def build_position_index():
-    page_index = 0
-    ipd = defaultdict(defaultdict(list))
-    partial_indexes = []
-    for domain in os.scandir(PATH_TO_PAGES):
-        for page in os.scandir(domain.path):
-            page_index += 1 # enumerate vs hash ???
-            with open(page.path, "r") as file:
-                data = json.loads(file.read())
-                html_content = data["content"]
-                text = BeautifulSoup(html_content, "lxml").get_text()
-                stems = tokenizer(text)
-                position = 0
-                for stem in stems:
-                    position += 1
-                    ipd[stem][page_index].append(position)
-            print(page_index)
-            if page_index % 15000 == 0: 
-                dump_as_text(f"inverted_index{page_index//15000}.txt", iid)
-                partial_indexes.append(f"inverted_index{page_index//15000}.txt")
-                iid = defaultdict(list)
-    dump_as_text(f"inverted_index{page_index//15000 + 1}.txt", iid)
-    partial_indexes.append(f"inverted_index{page_index//15000 +1}.txt")
-
-
-    merge_files("position_index.txt", partial_indexes)
-                    
-def buildindex():
-    #directory = input()
-    iid = defaultdict(list)
-    # enumerate vs hash ???
-    # either way we need to store the mapping
-    urls = {}
-    page_index = 0
-    partial_indexes = []
-    for domain in os.scandir(PATH_TO_PAGES):
-        for page in os.scandir(domain.path):
-            page_index += 1 # enumerate vs hash ???
-            with open(page.path, "r") as file:
-                data = json.loads(file.read())
-                urls[page_index] = data["url"]
-                html_content = data["content"]
-                text = BeautifulSoup(html_content, "lxml").get_text()
-                stems = tokenizer(text)
-                for stem in stems:
-                    iid[stem].append((page_index, stems[stem]))
-
-                # check accumulated index size with sys.getsizeof(index)
-                # if it is over some threshold, dump it into a text file
-                # maybe we can add try/except in the case of memory overflow - MemoryError in python 
-            print(page_index)
-            if page_index % 15000 == 0: 
-                dump_as_text(f"inverted_index{page_index//15000}.txt", iid)
-                partial_indexes.append(f"inverted_index{page_index//15000}.txt")
-                iid = defaultdict(list)
-            
-    dump_as_text(f"inverted_index{page_index//15000 + 1}.txt", iid)
-    partial_indexes.append(f"inverted_index{page_index//15000 +1}.txt")
-
-
-    merge_files("final_index.txt", partial_indexes)
+    def dict_to_str(self, dict):
+        return str(dict)
+    
+    def dict_to_json(self, dictionary):
+        return [{'k': k, 'v':v} for k, v in dictionary.items()]
+    
+    def json_to_dict(self, json_result):
+        result = dict()
+        for dictionary in json_result:
+            key = tuple(dictionary['k'])
+            val = dictionary['v']
+            result[key] = val
+        return result
+    
     # after indexing all the pages, we have to merge the created text files
     # open all the files, and read them line by line
     # at the top, get the token that comes first
@@ -115,97 +57,369 @@ def buildindex():
     # note where the posting info will start in the file for the index of the index
     # move the line down afterward
 
+    def merge_files(self):
+        file_obj = [open(file, encoding="utf-8") for file in self.partial_indexes]
+        cur_dicts = [self.str_to_dict(file.readline()) for file in file_obj]
+        #print("merged at :" , self.location)
+        out = open(self.location, 'w', encoding="utf-8")
+        while len(cur_dicts) != 0:
+            cur_min = min([list(dict.keys())[0] for dict in cur_dicts])
+            # if cur_min == '12th' or cur_min == 'year':
+            #     print([dict.keys() for dict in cur_dicts])
+            #     print(cur_min)
+            cur_postings = []
+            for i in range(len(cur_dicts)):
+                if i >= len(cur_dicts):
+                    continue
+                if cur_min in cur_dicts[i]:
+                    cur_postings.append(cur_dicts[i][cur_min])
+                    line = file_obj[i].readline()
+                    if line:
+                        cur_dicts[i] = self.str_to_dict(line)
+                    else:
+                        cur_dicts.pop(i)
+                        file_obj[i].close()
+                        file_obj.pop(i)
+            combined = self.merge_postings(cur_postings)
+            final_post = {}
+            final_post[cur_min] = combined
+            posting = self.dict_to_str(final_post)
+            out.write(posting)
+        out.close()
+    
+    def dump_as_text(self, file: str, iid: dict) -> None:
+        with open(file, 'w', encoding="utf-8") as f:
+            f.write(self.dict_to_str(iid))
+    
+    def dump(self, filename: str):
+        self.dump_as_text(filename, self.index)
+        self.partial_indexes.append(filename)
+        self.index = defaultdict(list)
 
-# 1302, 2052
-    print(page_index)
-    print(len(iid))
-    dumping_json = json.dumps(iid)
+    def build_index_of_index(self):
+        with open(self.location, encoding="utf-8") as f:
+            position = 0
+            line = f.readline()
+            while line: 
+                info = line.split(self.splitter)
+                self.token_loc[info[0]] = position
+                position = f.tell()
+                line = f.readline()
+
+    def find_token(self, token) -> dict:
+        #print("INDEX: finding token:", token)
+        line = ''
+        with open(self.location, encoding="utf-8") as f:
+            #print('postion =', self.token_loc[token])
+            if token not in self.token_loc:
+                print("not in index", self.location)
+                return {}
+            f.seek(self.token_loc[token])
+            line = f.readline()
+        #print('converting:', line)
+        return self.str_to_dict(line)
+
+
+class InvertedIndex(Index):
+    def __init__(self, loc ="final_index1.txt", partial_loc = "inverted_index" ) -> None:
+        super().__init__()
+        self.location = loc
+        self.partial_location = partial_loc
+        self.champion_loc = {}
+
+    def add_page(self, stems, page_index) -> None:
+        position = 0
+        temp_index = defaultdict(list)
+        if page_index % self.dump_threshold == 0: 
+            self.dump(f"{self.partial_location}{len(self.partial_indexes)}.txt")
+            self.index = defaultdict(list)
+        for stem in stems:
+            position += 1
+            if stem not in temp_index:
+                temp_index[stem] = [page_index, 1, position]
+            else:
+                temp_index[stem][1] += 1
+                temp_index[stem].append(position)
+        for stem in temp_index:
+            self.index[stem].append(tuple(temp_index[stem]))
+
+        # check accumulated index size with sys.getsizeof(index)
+        # if it is over some threshold, dump it into a text file
+        # maybe we can add try/except in the case of memory overflow - MemoryError in python 
+
+    def merge_partials(self):
+        self.dump(f"{self.partial_location}{len(self.partial_indexes)}.txt")
+        self.index = defaultdict(list)
+        self.merge_files()
+            
+            
+    def dict_to_str(self, iid: dict[str, list[(int, int)]]):
+        res = []
+        for k in sorted(iid):
+            v = "#@#".join([",".join([str(element) for element in tup]) for tup in iid[k]])
+            res.append(str(k) + self.splitter + v + "\n")
+        return ''.join(res)
+
+    def str_to_dict(self, line: str):
+        parsed = line.strip().split(self.splitter)
+        posting = [tuple([int(num_str) for num_str in doc.split(",")]) for doc in parsed[1].split("#@#")]
+        return {parsed[0]: posting}
+    
+    def create_champion_list(self):
+        file_in = open(self.location)
+        file_out = open("champion_index.txt", "w")
+        line = file_in.readline()
+        while line:
+            key = line.split(self.splitter)[0]
+            posting = self.str_to_dict(line)[key]
+            posting_by_freq = sorted(posting, key = lambda x: x[1], reverse=True)
+            max = min(30,len(posting_by_freq))
+            iid = {key: posting_by_freq[:max]}
+            file_out.write(self.dict_to_str(iid))
+            line = file_in.readline()
+        file_in.close
+        file_out.close
+
+    def build_champion_index_of_index(self):
+        with open("champion_index.txt", encoding="utf-8") as f:
+            position = 0
+            line = f.readline()
+            while line: 
+                info = line.split(self.splitter)
+                self.champion_loc[info[0]] = position
+                position = f.tell()
+                line = f.readline()
+
+    def find_token_champion(self, token) -> dict:
+        #print("INDEX: finding token:", token)
+        line = ''
+        with open("champion_index.txt", encoding="utf-8") as f:
+            #print('postion =', self.token_loc[token])
+            if token not in self.champion_loc:
+                return {}
+            f.seek(self.champion_loc[token])
+            line = f.readline()
+        #print('converting:', line)
+        return self.str_to_dict(line)
+
+class BigramIndex(Index):
+
+    def __init__(self):
+        Index.__init__(self)
+        self.location = "bigram_index.txt"
+        self.dump_threshold = 10000
+
+    def add_page(self, stemmed_tokens, doc_id):
+        token_bigrams = nltk.bigrams(stemmed_tokens)
+        bigram_count = Counter(token_bigrams)
+        for bigram, frequency in bigram_count.items():
+            self.index[bigram].append((doc_id, frequency))
+
+        if doc_id % self.dump_threshold == 0:
+            self.dump(f"bigram_partial{len(self.partial_indexes) + 1}.txt")
+            self.index = defaultdict(list)
+
+    def merge_partials(self):
+        self.dump(f"bigram_partial{len(self.partial_indexes) + 1}.txt")
+        self.index = defaultdict(list)
+        self.merge_files()
+
+    def dict_to_str(self, bigram_index: dict[tuple[str, str], list[(int, int)]]):
+        result = []
+        for bigram in sorted(bigram_index):
+            postings = "#@#".join(f"{doc_id},{freq}" for doc_id, freq in bigram_index[bigram])
+            bigram_string = f"{bigram[0]} {bigram[1]}"
+            result.append(bigram_string + self.splitter + postings + "\n")
+        return ''.join(result)
+
+    def str_to_dict(self, line: str):
+        line = line.rstrip()
+        splitted = line.split(self.splitter)
+        bigram = tuple(splitted[0].split())
+        postings_str = [posting.split(",") for posting in splitted[1].split("#@#")]
+        parsed_postings = []
+        for posting in postings_str:
+            doc_id = int(posting[0])
+            freq = int(posting[1])
+            parsed_postings.append((doc_id, freq))
+        return {bigram: parsed_postings}
+    
+    def build_index_of_index(self):
+        if os.path.exists('bigram_ioi.json'):
+            with open('bigram_ioi.json', "r") as f:
+                x = f.read()
+                content = json.loads(x)
+            self.token_loc = self.json_to_dict(content)
+            return
+        with open(self.location, encoding="utf-8") as f:
+            line = f.readline()
+            pos = 0
+            while line: 
+                info = line.split(self.splitter)
+                token = tuple(info[0].split())
+                self.token_loc[token] = pos
+                pos = f.tell()
+                line = f.readline()
+        ioi = json.dumps(self.dict_to_json(self.token_loc))
+        with open('bigram_ioi.json', 'w') as bigram_ioi:
+            bigram_ioi.write(ioi)
+
+
+    def find_token(self, token) -> dict:
+        #print('dinding token:', token)
+        line = ''
+        # print("getting:", token)
+        with open(self.location, encoding="utf-8") as f:
+            if token not in self.token_loc:
+                # print("not in index", self.location)
+                return {}
+            f.seek(self.token_loc[token])
+            line = f.readline()
+        # print("got", line)
+        return self.str_to_dict(line)
+    
+class TrigramIndex(Index):
+
+    def __init__(self):
+        Index.__init__(self)
+        self.location = "trigram_index.txt"
+        self.dump_threshold = 10000
+
+    def add_page(self, stemmed_tokens, doc_id):
+        token_trigrams = nltk.trigrams(stemmed_tokens)
+        bigram_count = Counter(token_trigrams)
+        for trigram, frequency in bigram_count.items():
+            self.index[trigram].append((doc_id, frequency))
+
+        if doc_id % self.dump_threshold == 0:
+            self.dump(f"trigram_partial{len(self.partial_indexes) + 1}.txt")
+            self.index = defaultdict(list)
+
+    def merge_partials(self):
+        self.dump(f"trigram_partial{len(self.partial_indexes) + 1}.txt")
+        self.index = defaultdict(list)
+        self.merge_files()
+
+    def dict_to_str(self, trigram_index: dict[tuple[str, str], list[(int, int)]]):
+        result = []
+        for trigram in sorted(trigram_index):
+            postings = "#@#".join(f"{doc_id},{freq}" for doc_id, freq in trigram_index[trigram])
+            bigram_string = f"{trigram[0]} {trigram[1]} {trigram[2]}"
+            result.append(bigram_string + self.splitter + postings + "\n")
+        return ''.join(result)
+    
+    def str_to_dict(self, line: str):
+        line = line.rstrip()
+        splitted = line.split(self.splitter)
+        trigram = tuple(splitted[0].split())
+        postings_str = [posting.split(",") for posting in splitted[1].split("#@#")]
+        parsed_postings = []
+        for posting in postings_str:
+            doc_id = int(posting[0])
+            freq = int(posting[1])
+            parsed_postings.append((doc_id, freq))
+        return {trigram: parsed_postings}
+
+
+    def build_index_of_index(self):
+        if os.path.exists('trigram_ioi.json'):
+            with open('trigram_ioi.json', "r") as f:
+                x = f.read()
+                content = json.loads(x)
+            self.token_loc = self.json_to_dict(content)
+            return
+        with open(self.location, encoding="utf-8") as f:
+            line = f.readline()
+            pos = 0
+            while line: 
+                info = line.split(self.splitter)
+                token = tuple(info[0].split())
+                self.token_loc[token] = pos
+                pos = f.tell()
+                line = f.readline()
+
+        ioi = json.dumps(self.dict_to_json(self.token_loc))
+        with open('trigram_ioi.json', 'w') as bigram_ioi:
+            bigram_ioi.write(ioi)
+
+    def find_token(self, token) -> dict:
+        #print('findind token:', token)
+        line = ''
+        with open(self.location, encoding="utf-8") as f:
+            if token not in self.token_loc:
+                # print("not in index", self.location)
+                return {}
+            f.seek(self.token_loc[token])
+            line = f.readline()
+        #print(line)
+        return self.str_to_dict(line)
+
+            
+def build_indexes():
+    # initialize all indexes
+    headings_iid = InvertedIndex("final_headings_index.txt", "headings_index")
+    tagged_iid = InvertedIndex("final_tagged_index.txt", "tagged_index")
+    iid = InvertedIndex()
+    bigram_index = BigramIndex()
+    trigram_index = TrigramIndex()
+    
+    page_index = 0
+    urls = {}
+    # dup_pages = []
+    tokenizer = RegexpTokenizer(r'[a-zA-Z0-9]+')
+    for domain in os.scandir(PATH_TO_PAGES):
+        simhash_values = []
+        for page in os.scandir(domain.path):
+            with open(page.path, "r") as file:
+                data = json.loads(file.read())
+                html_content = data["content"]
+                soup = BeautifulSoup(html_content, "lxml")
+                text = soup.get_text()
+                tokens = tokenizer.tokenize(text)
+                heading_content = str(soup.find_all(["h1"]))
+                tagged_content = str(soup.find_all(["h2", "h3,", "h4","h5","h6","h7" "b", "strong", "i"]))
+                heading_text = BeautifulSoup(heading_content, "lxml").get_text()
+                tagged_text =  BeautifulSoup(tagged_content, "lxml").get_text()
+                heading_tokens = tokenizer.tokenize(heading_text)
+                tagged_tokens = tokenizer.tokenize(tagged_text)
+
+                # dup check goes here
+                hash_value = duplicatecheck.hash(Counter(tokens))
+                is_duplicate = duplicatecheck.duplicate_exists(hash_value, simhash_values)
+                simhash_values.append(hash_value)
+                # if is_duplicate:
+                #     dup_pages.append(data["url"])
+                # else:
+                if not is_duplicate:
+                    page_index += 1 # enumerate vs hash ???
+                    urls[page_index] = data["url"]
+                    print(page_index)
+                    stems = iid.stemmer(tokens)
+                    heading_stems = headings_iid.stemmer(heading_tokens)
+                    headings_iid.add_page(heading_stems,page_index)
+                    iid.add_page(stems, page_index)
+                    tagged_stems = tagged_iid.stemmer(tagged_tokens)
+                    tagged_iid.add_page(tagged_stems,page_index)
+                    bigram_index.add_page(stems, page_index)
+                    trigram_index.add_page(stems, page_index)
+                # add more
+        #         if page_index >= 3000:
+        #             break
+
+        # if page_index >= 3000:
+        #     break
+
+    iid.merge_partials()
+    headings_iid.merge_partials()
+    tagged_iid.merge_partials()
+    bigram_index.merge_partials()
+    trigram_index.merge_partials()
     dumping_urls = json.dumps(urls)
-    with open("inverted_index.json", "w") as opened:
-        opened.write(dumping_json)
     with open("urlindex.json", "w") as url_index:
         url_index.write(dumping_urls)
-
-    
-def dict_to_str(iid: dict[int, list[(int, int)]]):
-    res = ""
-    for k in sorted(iid):
-        v = ",".join([str(i) for i in iid[k]])
-        res += str(k) + "#$%^& " + v + "\n"
-    return res
-
-def str_to_dict(line: str):
-    parsed = line.split("#$%^& ")
-    posting = []
-    s = parsed[1]
-    i = 0
-    while i < len(parsed[1]):
-        if s[i] == "(":
-            res = ""
-            i += 1
-            while s[i] != ")":
-                res += s[i]
-                i += 1          
-            tup = res.split(",")
-            posting.append(tuple([int(tup[0]), float(tup[1])]))
-        i += 1
-    return {parsed[0]: posting}
-
-def dump_as_text(file: str, iid: dict[int, list[(int,int)]]) -> None:
-    with open(file, 'w', encoding="utf-8") as f:
-        f.write(dict_to_str(iid))
-
-def merge_postings(allpostings):
-    res = []
-    for posting in allpostings:
-        res.extend(posting)
-    return res
-
-def merge_files(output, args):
-    file_obj = [open(file, encoding="utf-8") for file in args]
-    cur_dicts = [str_to_dict(file.readline()) for file in file_obj]
-    out = open(output, 'w', encoding="utf-8")
-    while len(cur_dicts) != 0:
-        cur_min = list(min([dict.keys() for dict in cur_dicts]))[0]
-        cur_postings = []
-        for i in range(len(cur_dicts)):
-            if i >= len(cur_dicts):
-                continue
-            if cur_min in cur_dicts[i]:
-                cur_postings.append(cur_dicts[i][cur_min])
-                line = file_obj[i].readline()
-                if line:
-                    cur_dicts[i] = str_to_dict(line)
-                else:
-                    cur_dicts.pop(i)
-                    file_obj[i].close()
-                    file_obj.pop(i)
-        combined = merge_postings(cur_postings)
-        final_post = {}
-        final_post[cur_min] = combined
-        posting = dict_to_str(final_post)
-        out.write(posting)
-    out.close()
-
-def build_index_of_index(inverted_index):
-    token_loc = {}
-    with open(inverted_index, encoding="utf-8") as f:
-        line = f.readline()
-        while line: 
-            info = line.split("#$%^& ")
-            token_loc[info[0]] = f.tell() - len(line) - 1
-            line = f.readline()
-    return token_loc
-
-def find_token(token, token_loc, inverted_index):
-    line = ''
-    with open(inverted_index, encoding="utf-8") as f:
-        f.seek(token_loc[token])
-        line = f.readline()
-        
-    return line
-            
+    # print(dup_pages)
 
 if __name__ == "__main__":
-    buildindex()
+    iid = InvertedIndex()
+    #ipd = PositionalIndex()
     
