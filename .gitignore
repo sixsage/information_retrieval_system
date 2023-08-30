@@ -6,3 +6,4 @@ __pycache__/
 .venv/
 !TEST.txt
 !README.txt
+.env
