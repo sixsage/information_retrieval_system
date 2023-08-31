@@ -37,9 +37,9 @@ def generate_summary(url):
         result = result[:4000]
         result += '\nPlease summarize the above webpage content in less than 60 words'
         # pass in result to openai
-        gpt_response = openai.Completion.create(
-            model="gpt-3.5-turbo-0613",
-            message = [{'role': 'user', 'content': result}]
+        gpt_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages = [{'role': 'user', 'content': result}]
         )
         return gpt_response['choices'][0]['message']['content'].strip()
     else:

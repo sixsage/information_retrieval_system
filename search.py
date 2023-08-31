@@ -106,7 +106,6 @@ def single_word_process(terms, iid, local_iid, headings, tagged, total_pages):
             for posting in headings_iid[term]:
                 doc_id = posting[0]
                 multiplier[doc_id] = 1.3
-    print('time after getting tf at position', time.time() - start_time)
     query_as_doc = Counter(terms)
     query_score = []
     for term in terms:
@@ -114,7 +113,6 @@ def single_word_process(terms, iid, local_iid, headings, tagged, total_pages):
     final_score_dict = dict()
     for doc_id in doc_scores:
         final_score_dict[doc_id] = cosine_similarity(doc_scores[doc_id], query_score) * (multiplier[doc_id] if doc_id in multiplier else 1)
-    print('time after getting score:', time.time() - start_time)
 
     # q.put(positional_processing(unsorted_terms, final_score_dict, iid))
     return positional_processing(unsorted_terms, final_score_dict, local_iid)
@@ -139,12 +137,10 @@ def query_processing(query, iid, local_iid, bigram_iid, trigram_iid, headings_ii
     candidates = single_word_process(query, iid, local_iid, headings_iid, tagged_iid, total_pages)
     bigram_multiplied = ngrams_processing(list(nltk.bigrams(query)), candidates, bigram_iid)
     trigram_multiplied = ngrams_processing(list(nltk.trigrams(query)), bigram_multiplied, trigram_iid)
-    print('after all functions runs', time.time() - start_time)
     # single.join()
     # bigrams.join()
     # trigrams.join()
     result = [docid for docid in sorted(trigram_multiplied, key=lambda x: trigram_multiplied[x], reverse=True)]
-    print('after everything and sorting', time.time() - start_time)
     return result
 
 
@@ -173,7 +169,6 @@ def ngrams_processing(terms, candidates, special) -> dict[int, int]:
     # q.put(doc_scores)
     for doc_id in candidates:
         candidates[doc_id] *= doc_scores[doc_id]
-    print('ngrams takes:', time.time() - start_time)
     return candidates
 
 def positional_processing(query, cand_docids: dict, local_iid):
@@ -198,7 +193,6 @@ def positional_processing(query, cand_docids: dict, local_iid):
                 i += 1
             else:
                 j += 1
-    print('positional processing takes:', time.time() - start_time)
     return cand_docids
         
 def posify(query):

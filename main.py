@@ -1,9 +1,9 @@
 import search
 import invertedindex
+import summarize
 from nltk.stem import PorterStemmer
 import os
 import json
-import multiprocessing
 import datetime, time
 import nltk
 import time
@@ -19,8 +19,8 @@ def load_json(file):
 if __name__ == "__main__":
     #total pages need to be stored 
 
-    #if not (os.path.exists("final_index1.txt") and os.path.exists("urlindex.json")):
-    invertedindex.build_indexes()
+    if not (os.path.exists("final_index1.txt") and os.path.exists("urlindex.json")):
+        invertedindex.build_indexes()
     headings = invertedindex.InvertedIndex("final_headings_index.txt", "headings_index")
     if os.path.exists("headings_ioi.json"):
         x = load_json("headings_ioi.json")
@@ -90,13 +90,15 @@ if __name__ == "__main__":
         # for token in nltk.trigrams(terms):
         #     trigram_iid.update(trigrams.find_token(token))
         # print(query_iid) 
-        print('after all updates:', time.time() - s_time)
         #result = search.query_processing(terms, local_iid, champion_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
         result = search.query_processing(terms, iid, local_iid, bigrams, trigrams, headings, tagged, TOTAL_PAGES)
         e_time = time.time()
         print("Top 10 urls: ")
-        for doc_id in result[:10]:
-            print(urls[str(doc_id)])
+        for doc_id in result[:3]:
+            url = urls[str(doc_id)]
+            print(url)
+            print(summarize.generate_summary(url))
+            print('=================================================')
         duration_time = (e_time - s_time) * 1000
         print(duration_time)
     # for doc_id in target_doc_ids:
