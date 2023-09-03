@@ -16,10 +16,13 @@ class PageRank:
     def add_link(self, doc, links_in_doc):
         '''
         doc = docid
-        links_in_doc = links that are in the doc
+        links_in_doc = list of links that are in the doc
         '''
-        
-
+        for link in links_in_doc:
+            if link in self.link_to_docid:
+                link_docid = self.link_to_docid[link]
+                self.directs_to[doc].append(link_docid)
+                self.directed_by[link_docid].append(doc)
 
 
     def calculate_pagerank(self):
