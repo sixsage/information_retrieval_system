@@ -11,7 +11,7 @@ class PageRank:
             x = f.read()
             link_mapping = json.loads(x)
             for k, v in link_mapping.items():
-                self.link_to_docid[v] = k
+                self.link_to_docid[v] = int(k)
 
     def add_link(self, doc, links_in_doc):
         '''
@@ -24,6 +24,21 @@ class PageRank:
                 self.directs_to[doc].append(link_docid)
                 self.directed_by[link_docid].append(doc)
 
+    def _calculate_pagerank(self, docid, damping_factor):
+        result = 0
+        for link in self.directed_by[docid]:
+            result += self.pageranks[link] / len(self.directs_to[link])
+        return 1 - damping_factor + 0.85 * result
 
-    def calculate_pagerank(self):
-        pass
+
+    def get_pageranks(self, damping_factor = 0.85, iterations = 10):
+        # assign the pagerank records as attribute?
+        self.pageranks = [1] * (len(self.link_to_docid) + 1) # to account for 1-indexed docids
+
+        for _ in range(iterations):
+            new_iteration = [0] * len(self.pageranks)
+            for docid in range(1, len(self.pageranks)):
+                new_iteration[docid] = self._calculate_pagerank(docid, damping_factor)
+            self.pageranks = new_iteration
+
+        return self.pageranks
