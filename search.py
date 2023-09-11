@@ -118,7 +118,7 @@ def single_word_process(terms, iid, local_iid, headings, tagged, total_pages):
     return positional_processing(unsorted_terms, final_score_dict, local_iid)
 
 
-def query_processing(query, iid, local_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, total_pages) -> list[int]:
+def query_processing(query, iid, local_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, pageranks, total_pages) -> list[int]:
     start_time = time.time()
     # single_queue = multiprocessing.Queue()
     # bigrams_queue = multiprocessing.Queue()
@@ -140,7 +140,7 @@ def query_processing(query, iid, local_iid, bigram_iid, trigram_iid, headings_ii
     # single.join()
     # bigrams.join()
     # trigrams.join()
-    result = [docid for docid in sorted(trigram_multiplied, key=lambda x: trigram_multiplied[x], reverse=True)]
+    result = [docid for docid in sorted(trigram_multiplied, key=lambda x: trigram_multiplied[x] + 0.1 * pageranks[x], reverse=True)]
     return result
 
 

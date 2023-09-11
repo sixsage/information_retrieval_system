@@ -63,8 +63,8 @@ if __name__ == "__main__":
     bigrams.build_index_of_index()
     trigrams = invertedindex.TrigramIndex()
     trigrams.build_index_of_index()
-    #iid = load_json("inverted_index.json")
     urls = load_json("urlindex.json")
+    pageranks = load_json("pagerank.json")
     stemmer = PorterStemmer()
     local_iid = {}
     bigram_iid = {}
@@ -91,14 +91,14 @@ if __name__ == "__main__":
         #     trigram_iid.update(trigrams.find_token(token))
         # print(query_iid) 
         #result = search.query_processing(terms, local_iid, champion_iid, bigram_iid, trigram_iid, headings_iid, tagged_iid, TOTAL_PAGES)
-        result = search.query_processing(terms, iid, local_iid, bigrams, trigrams, headings, tagged, TOTAL_PAGES)
+        result = search.query_processing(terms, iid, local_iid, bigrams, trigrams, headings, tagged, pageranks, TOTAL_PAGES)
         e_time = time.time()
         print("Top 10 urls: ")
-        for doc_id in result[:3]:
+        for doc_id in result[:10]:
             url = urls[str(doc_id)]
             print(url)
-            print(summarize.generate_summary(url))
-            print('=================================================')
+            # print(summarize.generate_summary(url))
+            # print('=================================================')
         duration_time = (e_time - s_time) * 1000
         print(duration_time)
     # for doc_id in target_doc_ids:

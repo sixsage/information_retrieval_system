@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 import json
 import os
 import duplicatecheck
+import pagerank
 
 PATH_TO_PAGES = 'DEV'
 
@@ -362,6 +363,7 @@ def build_indexes():
     iid = InvertedIndex()
     bigram_index = BigramIndex()
     trigram_index = TrigramIndex()
+    pageranks = pagerank.PageRank()
     
     page_index = 0
     urls = {}
@@ -402,6 +404,8 @@ def build_indexes():
                     tagged_iid.add_page(tagged_stems,page_index)
                     bigram_index.add_page(stems, page_index)
                     trigram_index.add_page(stems, page_index)
+                    pageranks.add_link(page_index, [link.get("href") for link in soup.find_all("a")])
+
                 # add more
         #         if page_index >= 3000:
         #             break
@@ -417,6 +421,7 @@ def build_indexes():
     dumping_urls = json.dumps(urls)
     with open("urlindex.json", "w") as url_index:
         url_index.write(dumping_urls)
+    pageranks.get_pageranks()
     # print(dup_pages)
 
 if __name__ == "__main__":
